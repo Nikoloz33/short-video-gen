@@ -8,12 +8,12 @@ import { renderMedia, selectComposition } from '@remotion/renderer';
 import { bundleProject, fmtBytes, VIDEO_ROOT } from './lib/bundle';
 import { probe } from './lib/ffmpeg';
 
-const out = path.join(VIDEO_ROOT, '..', 'out', 'smoke', 'placeholder.mp4');
+const out = path.join(VIDEO_ROOT, '..', 'out', 'smoke', 'title-card.mp4');
 fs.mkdirSync(path.dirname(out), { recursive: true });
 
 const t0 = Date.now();
 const serveUrl = await bundleProject();
-const composition = await selectComposition({ serveUrl, id: 'Placeholder' });
+const composition = await selectComposition({ serveUrl, id: 'Gallery-title-card-en' });
 await renderMedia({
   composition,
   serveUrl,
@@ -26,7 +26,11 @@ await renderMedia({
 });
 const info = await probe(out);
 const ok =
-  info.vcodec === 'h264' && info.width === 270 && info.height === 480 && Math.abs(info.fps - 30) < 0.01;
+  info.vcodec === 'h264' &&
+  info.width === 270 &&
+  info.height === 480 &&
+  Math.abs(info.fps - 30) < 0.01 &&
+  info.duration > 3.9;
 console.log(
   `${ok ? '✓' : '✗'} ${out}  ${info.width}x${info.height} @ ${info.fps} fps, ${info.duration.toFixed(2)} s, ` +
     `${fmtBytes(info.size)}, ${((Date.now() - t0) / 1000).toFixed(1)} s wall`,

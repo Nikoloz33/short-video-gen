@@ -43,6 +43,7 @@ jobs:
       - run: npm run typecheck -w video
       - run: npm test -w video
       - run: npm run render:smoke -w video
+      - run: npm run test:stills -w video
 
   web:
     runs-on: ubuntu-latest

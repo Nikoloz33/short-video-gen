@@ -36,12 +36,29 @@ burned-in captions, quiz checkpoints. Product spec: `docs/brief.md` (single sour
   in `video/src/icons/custom.tsx`, tags in en/ka). Add an icon = add a catalog entry; the test checks
   it resolves.
 
+## Templates (video/src/templates)
+- 11 data-driven templates: title_card, step_card, do_dont, checklist, warning, timer, schedule,
+  quiz_question, quiz_answer, summary, disclaimer. The LLM fills fields; it never chooses layout.
+- Every text box is declared in `templates/boxes.ts` (width, max lines, size, weight). Templates draw
+  text with `<FitLines>` (one block per wrapped line from `fitText()`), and `lib/checkSpec.ts`
+  validates a spec with the SAME boxes — overflow is an error, never an ellipsis. Georgian glyphs are
+  ~0.6 em wide (wider than Latin), so Georgian text needs ~15 % more room.
+- Captions: `lib/captions.ts` chunks narration to the caption box and times chunks over the measured
+  clip; the same cues drive the burned-in band and SRT/VTT.
+- Motion is cheap only (fade/slide/scale/tick/ring in `templates/kit.tsx`). No particles or filters.
+- Fixed UI words live in `UI_TEXT` (en/ka). Never `toUpperCase()` Georgian (Mtavruli is not bundled).
+- Remotion composition ids allow only `[a-zA-Z0-9-]`: use `galleryId()`.
+- Gallery (`examples/gallery.ts`): one example scene per template per language → compositions
+  `Gallery-<template>-<lang>`, `Reel-<lang>`; snapshot baselines in `video/snapshots/`.
+
 ## Commands
 | command | what |
 |---|---|
 | `uv run ruff check . ; uv run ruff format --check . ; uv run mypy ; uv run pytest` | Python checks |
 | `npm run lint ; npm run format:check ; npm run typecheck ; npm test` | TS checks (all workspaces) |
 | `npm run render:smoke -w video` | bundle + tiny render + ffprobe check |
+| `npm run gallery -w video [-- --update]` | stills of every template (en+ka) → `out/gallery/contact-<lang>.png`; `--update` rewrites snapshots |
+| `npm run test:stills -w video` | snapshot check (27x48 gray thumbnails, mean diff ≤ 6) |
 | `npm run studio -w video` | Remotion Studio |
 | `npm run fonts -w video` | copy Noto woff2 subsets to `video/public/fonts` + regenerate `src/catalog/fonts.json` / `font-metrics.json` |
 | `npm run still -w video -- <id> [--props f.json] [--frame N]` | one PNG into `out/stills/` (e.g. `IconSheet`) |

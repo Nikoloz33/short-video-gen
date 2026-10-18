@@ -9,7 +9,9 @@
     "test": "vitest run",
     "render:smoke": "tsx scripts/smoke-render.ts",
     "fonts": "tsx scripts/gen-fonts.ts",
-    "still": "tsx scripts/still.ts"
+    "still": "tsx scripts/still.ts",
+    "gallery": "tsx scripts/gallery.ts",
+    "test:stills": "tsx scripts/gallery.ts --check"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.530",

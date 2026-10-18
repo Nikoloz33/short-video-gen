@@ -1,36 +1,47 @@
+/**
+ * Compositions:
+ *  - "InstructionVideo": renders any VideoSpec passed as input props (the render worker uses this);
+ *  - "Gallery-<template>-<lang>": one example scene per template, for Studio + stills/snapshots;
+ *  - "Reel-<lang>": all templates back to back;
+ *  - "IconSheet": the icon catalog at a glance.
+ * Duration always comes from the spec (calculateMetadata).
+ */
 import React from 'react';
-import { AbsoluteFill, Composition, Still, interpolate, useCurrentFrame } from 'remotion';
+import { Composition, Still, type CalculateMetadataFunction } from 'remotion';
+import { GALLERY, TEMPLATES, galleryId, gallerySpec, galleryReel } from './examples/gallery';
 import { IconSheet } from './IconSheet';
+import { InstructionVideo, totalSeconds } from './InstructionVideo';
 import { FPS, HEIGHT, WIDTH } from './lib/time';
-import { loadBundledFonts } from './theme/fonts';
-import { DEFAULT_THEME as T } from './theme/theme';
+import type { Lang, VideoSpec } from './spec/types';
 
-loadBundledFonts();
+const calculateMetadata: CalculateMetadataFunction<VideoSpec> = ({ props }) => ({
+  durationInFrames: Math.max(1, Math.round(totalSeconds(props) * FPS)),
+});
 
-/** Placeholder until the scene templates land: a flat title card used by the smoke render. */
-const Placeholder: React.FC<{ title: string }> = ({ title }) => {
-  const frame = useCurrentFrame();
-  const opacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: 'clamp' });
-  return (
-    <AbsoluteFill style={{ background: T.colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: 'white', fontSize: 96, fontFamily: T.font.family, fontWeight: 700, opacity }}>
-        {title}
-      </div>
-    </AbsoluteFill>
-  );
-};
+const Video: React.FC<{ id: string; spec: VideoSpec }> = ({ id, spec }) => (
+  <Composition
+    id={id}
+    component={InstructionVideo}
+    defaultProps={spec}
+    calculateMetadata={calculateMetadata}
+    durationInFrames={Math.max(1, Math.round(totalSeconds(spec) * FPS))}
+    fps={FPS}
+    width={WIDTH}
+    height={HEIGHT}
+  />
+);
 
 export const Root: React.FC = () => (
   <>
-    <Composition
-      id="Placeholder"
-      component={Placeholder}
-      defaultProps={{ title: 'InstructVid' }}
-      durationInFrames={2 * FPS}
-      fps={FPS}
-      width={WIDTH}
-      height={HEIGHT}
-    />
+    <Video id="InstructionVideo" spec={galleryReel('en')} />
+    {(Object.keys(GALLERY) as Lang[]).map((lang) => (
+      <React.Fragment key={lang}>
+        <Video id={`Reel-${lang}`} spec={galleryReel(lang)} />
+        {TEMPLATES.map((t) => (
+          <Video key={t} id={galleryId(t, lang)} spec={gallerySpec(lang, t)} />
+        ))}
+      </React.Fragment>
+    ))}
     <Still id="IconSheet" component={IconSheet} width={WIDTH} height={HEIGHT} />
   </>
 );

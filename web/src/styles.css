@@ -1,0 +1,40 @@
+:root {
+  font-family: 'Noto Sans', 'Noto Sans Georgian', system-ui, sans-serif;
+  color: #14202b;
+  background: #f4f6f8;
+}
+
+body {
+  margin: 0;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 40% 60%;
+  height: 100vh;
+}
+
+.pane {
+  padding: 16px;
+  overflow: auto;
+}
+
+.chat {
+  border-right: 1px solid #d9dee3;
+  background: #fff;
+}
+
+.muted {
+  color: #6b7785;
+}
+
+@media (max-width: 860px) {
+  .app {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .chat {
+    border-right: none;
+    border-bottom: 1px solid #d9dee3;
+  }
+}

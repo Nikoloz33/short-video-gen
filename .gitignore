@@ -1,0 +1,37 @@
+# secrets / local config
+.env
+*.pem
+credentials*.json
+service-account*.json
+
+# python
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# node
+node_modules/
+web/dist/
+*.tsbuildinfo
+
+# renders, runtime data, caches
+out/
+data/projects/
+data/chroma/
+data/cache/
+data/*.sqlite
+data/*.sqlite-*
+data/metrics.db
+video/public/media/
+*.log
+
+# test artefacts
+playwright-report/
+test-results/

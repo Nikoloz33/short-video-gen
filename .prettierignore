@@ -1,0 +1,8 @@
+node_modules
+dist
+out
+coverage
+public
+video/src/generated
+**/*.json
+**/*.md

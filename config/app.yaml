@@ -1,0 +1,16 @@
+# Product settings. Timing always comes from measured clip durations; the paces below only size
+# the script writer's character budget.
+languages:
+  ka: { tts_code: ka-GE, chars_per_sec: 7.5 }   # measured, Flash TTS, calm
+  en: { tts_code: en-US, chars_per_sec: 14.0 }  # re-measure with scripts/measure_pace.py
+
+min_duration_s: 30
+max_duration_s: 60
+hard_cap_s: 90
+fix_loop_cap: 2
+recursion_limit: 80
+upload_retention_days: 30
+
+presets:
+  preview: { width: 540, height: 960, fps: 30, scale: 0.5, crf: 28 }
+  final:   { width: 1080, height: 1920, fps: 30, scale: 1.0, crf: 20 }

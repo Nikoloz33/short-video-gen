@@ -1,0 +1,25 @@
+# The ONLY place model names appear. Code asks the router for a role, never for a model.
+# Vertex AI, location eu, Application Default Credentials.
+location: eu
+
+roles:
+  # --- fast structured work: Flash -------------------------------------------------------------
+  intake:           { model: gemini-3.8-flash, temperature: 0.0, pricing: { in_per_m: 0.75, out_per_m: 3.75 } }
+  chat_edit:        { model: gemini-3.8-flash, temperature: 0.2, pricing: { in_per_m: 0.75, out_per_m: 3.75 } }
+  claim_extraction: { model: gemini-3.8-flash, temperature: 0.0, pricing: { in_per_m: 0.75, out_per_m: 3.75 } }
+  back_translation: { model: gemini-3.8-flash, temperature: 0.0, pricing: { in_per_m: 0.75, out_per_m: 3.75 } }
+  transcribe:       { model: gemini-3.8-flash, temperature: 0.0, pricing: { in_per_m: 0.75, out_per_m: 3.75 } }
+  rerank:           { model: gemini-3.8-flash, temperature: 0.0, pricing: { in_per_m: 0.75, out_per_m: 3.75 } }
+  pii_scrub:        { model: gemini-3.8-flash, temperature: 0.0, pricing: { in_per_m: 0.75, out_per_m: 3.75 } }
+  chat_reply:       { model: gemini-3.8-flash, temperature: 0.3, pricing: { in_per_m: 0.75, out_per_m: 3.75 } }
+
+  # --- reasoning: Argon (thinking_level LOW/MEDIUM only; MINIMAL and thinking_budget -> HTTP 400) ----
+  plan:               { model: gemini-4-argon, thinking_level: LOW,    pricing: { in_per_m: 2.0, out_per_m: 10.0 } }
+  write_script:       { model: gemini-4-argon, thinking_level: MEDIUM, pricing: { in_per_m: 2.0, out_per_m: 10.0 } }
+  fact_check_verdict: { model: gemini-4-argon, thinking_level: LOW,    pricing: { in_per_m: 2.0, out_per_m: 10.0 } }
+  fix_script:         { model: gemini-4-argon, thinking_level: MEDIUM, pricing: { in_per_m: 2.0, out_per_m: 10.0 } }
+  translate:          { model: gemini-4-argon, thinking_level: LOW,    pricing: { in_per_m: 2.0, out_per_m: 10.0 } }
+
+  # --- voice + embeddings --------------------------------------------------------------------------
+  tts:        { model: gemini-3.8-flash-tts, voice: Kore, pricing: { in_per_m: 0.5, audio_out_per_m: 9.0 } }
+  embeddings: { model: gemini-embedding-2, dimensions: 768, pricing: { in_per_m: 0.2 } }

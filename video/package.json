@@ -1,0 +1,27 @@
+{
+  "name": "instructvid-video",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "render:smoke": "tsx scripts/smoke-render.ts"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.530",
+    "@remotion/cli": "4.0.530",
+    "@remotion/renderer": "4.0.530",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.530",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.0",
+    "@types/react": "19.2.2",
+    "tsx": "4.20.6",
+    "vitest": "5.0.5"
+  }
+}

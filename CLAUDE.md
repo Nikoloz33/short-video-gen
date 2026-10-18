@@ -29,6 +29,12 @@ burned-in captions, quiz checkpoints. Product spec: `docs/brief.md` (single sour
 - TypeScript: strict, eslint (root `eslint.config.js`), prettier (root `.prettierrc.json`), vitest.
 - Video: 30 fps; `secToFrame()` in `video/src/lib/time.ts` is the one place seconds become frames.
 - Languages: `ka` and `en` only.
+- Fonts: Noto Sans + Noto Sans Georgian, bundled in `video/public/fonts` (OFL) and loaded with
+  `loadBundledFonts()`; CSS stack `FONT_STACK` in `video/src/theme/theme.ts`. Never a CDN.
+- Theme: `DEFAULT_THEME` + `TENANT_THEMES` overrides via `resolveTheme(name, override)`.
+- Icons: the LLM may only use names from `video/src/catalog/icons.json` (Lucide + 4 custom pictograms
+  in `video/src/icons/custom.tsx`, tags in en/ka). Add an icon = add a catalog entry; the test checks
+  it resolves.
 
 ## Commands
 | command | what |
@@ -37,6 +43,8 @@ burned-in captions, quiz checkpoints. Product spec: `docs/brief.md` (single sour
 | `npm run lint ; npm run format:check ; npm run typecheck ; npm test` | TS checks (all workspaces) |
 | `npm run render:smoke -w video` | bundle + tiny render + ffprobe check |
 | `npm run studio -w video` | Remotion Studio |
+| `npm run fonts -w video` | copy Noto woff2 subsets to `video/public/fonts` + regenerate `src/catalog/fonts.json` / `font-metrics.json` |
+| `npm run still -w video -- <id> [--props f.json] [--frame N]` | one PNG into `out/stills/` (e.g. `IconSheet`) |
 | `npm run dev -w web` | web UI dev server |
 
 ## Tooling gotchas

@@ -1,0 +1,997 @@
+{
+  "$defs": {
+    "AudioClip": {
+      "additionalProperties": false,
+      "properties": {
+        "src": {
+          "description": "URL or path of the narration clip",
+          "minLength": 1,
+          "type": "string"
+        },
+        "duration_s": {
+          "description": "Measured clip length in seconds",
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "type": "number"
+        },
+        "start_s": {
+          "description": "Clip start relative to the scene start",
+          "maximum": 5,
+          "minimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "src",
+        "duration_s",
+        "start_s"
+      ],
+      "title": "AudioClip",
+      "type": "object"
+    },
+    "ChecklistScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+          "type": "string"
+        },
+        "narration": {
+          "maxLength": 400,
+          "minLength": 1,
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Source chunk ids supporting the scene",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "type": "number"
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioClip"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "template": {
+          "const": "checklist",
+          "type": "string"
+        },
+        "heading": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "maxLength": 140,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 5,
+          "minItems": 2,
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "narration",
+        "evidence",
+        "duration_s",
+        "audio",
+        "template",
+        "heading",
+        "items"
+      ],
+      "title": "ChecklistScene",
+      "type": "object"
+    },
+    "DisclaimerScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+          "type": "string"
+        },
+        "narration": {
+          "maxLength": 400,
+          "minLength": 1,
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Source chunk ids supporting the scene",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "type": "number"
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioClip"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "template": {
+          "const": "disclaimer",
+          "type": "string"
+        },
+        "heading": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 300,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "narration",
+        "evidence",
+        "duration_s",
+        "audio",
+        "template",
+        "heading",
+        "text"
+      ],
+      "title": "DisclaimerScene",
+      "type": "object"
+    },
+    "DoDontScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+          "type": "string"
+        },
+        "narration": {
+          "maxLength": 400,
+          "minLength": 1,
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Source chunk ids supporting the scene",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "type": "number"
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioClip"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "template": {
+          "const": "do_dont",
+          "type": "string"
+        },
+        "do_text": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "do_icon": {
+          "type": "string"
+        },
+        "dont_text": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "dont_icon": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "narration",
+        "evidence",
+        "duration_s",
+        "audio",
+        "template",
+        "do_text",
+        "do_icon",
+        "dont_text",
+        "dont_icon"
+      ],
+      "title": "DoDontScene",
+      "type": "object"
+    },
+    "QuizAnswerScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+          "type": "string"
+        },
+        "narration": {
+          "maxLength": 400,
+          "minLength": 1,
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Source chunk ids supporting the scene",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "type": "number"
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioClip"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "question": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "options": {
+          "items": {
+            "maxLength": 140,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 2,
+          "type": "array"
+        },
+        "correct_index": {
+          "maximum": 3,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "template": {
+          "const": "quiz_answer",
+          "type": "string"
+        },
+        "explanation": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "narration",
+        "evidence",
+        "duration_s",
+        "audio",
+        "question",
+        "options",
+        "correct_index",
+        "template",
+        "explanation"
+      ],
+      "title": "QuizAnswerScene",
+      "type": "object"
+    },
+    "QuizQuestionScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+          "type": "string"
+        },
+        "narration": {
+          "maxLength": 400,
+          "minLength": 1,
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Source chunk ids supporting the scene",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "type": "number"
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioClip"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "question": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "options": {
+          "items": {
+            "maxLength": 140,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 2,
+          "type": "array"
+        },
+        "correct_index": {
+          "maximum": 3,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "template": {
+          "const": "quiz_question",
+          "type": "string"
+        },
+        "countdown_s": {
+          "maximum": 10,
+          "minimum": 3,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "narration",
+        "evidence",
+        "duration_s",
+        "audio",
+        "question",
+        "options",
+        "correct_index",
+        "template",
+        "countdown_s"
+      ],
+      "title": "QuizQuestionScene",
+      "type": "object"
+    },
+    "ScheduleRow": {
+      "additionalProperties": false,
+      "properties": {
+        "time": {
+          "maxLength": 24,
+          "minLength": 1,
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "time",
+        "text",
+        "icon"
+      ],
+      "title": "ScheduleRow",
+      "type": "object"
+    },
+    "ScheduleScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+          "type": "string"
+        },
+        "narration": {
+          "maxLength": 400,
+          "minLength": 1,
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Source chunk ids supporting the scene",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "type": "number"
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioClip"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "template": {
+          "const": "schedule",
+          "type": "string"
+        },
+        "heading": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "rows": {
+          "items": {
+            "$ref": "#/$defs/ScheduleRow"
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "narration",
+        "evidence",
+        "duration_s",
+        "audio",
+        "template",
+        "heading",
+        "rows"
+      ],
+      "title": "ScheduleScene",
+      "type": "object"
+    },
+    "SourceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "doc_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "doc_id",
+        "title"
+      ],
+      "title": "SourceRef",
+      "type": "object"
+    },
+    "StepCardScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+          "type": "string"
+        },
+        "narration": {
+          "maxLength": 400,
+          "minLength": 1,
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Source chunk ids supporting the scene",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "type": "number"
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioClip"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "template": {
+          "const": "step_card",
+          "type": "string"
+        },
+        "step_no": {
+          "maximum": 20,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "total_steps": {
+          "maximum": 20,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "narration",
+        "evidence",
+        "duration_s",
+        "audio",
+        "template",
+        "step_no",
+        "total_steps",
+        "icon",
+        "text"
+      ],
+      "title": "StepCardScene",
+      "type": "object"
+    },
+    "SummaryScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+          "type": "string"
+        },
+        "narration": {
+          "maxLength": 400,
+          "minLength": 1,
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Source chunk ids supporting the scene",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "type": "number"
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioClip"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "template": {
+          "const": "summary",
+          "type": "string"
+        },
+        "heading": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "points": {
+          "items": {
+            "maxLength": 140,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 2,
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "narration",
+        "evidence",
+        "duration_s",
+        "audio",
+        "template",
+        "heading",
+        "points"
+      ],
+      "title": "SummaryScene",
+      "type": "object"
+    },
+    "TimerScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+          "type": "string"
+        },
+        "narration": {
+          "maxLength": 400,
+          "minLength": 1,
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Source chunk ids supporting the scene",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "type": "number"
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioClip"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "template": {
+          "const": "timer",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "seconds": {
+          "maximum": 600,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "icon": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "narration",
+        "evidence",
+        "duration_s",
+        "audio",
+        "template",
+        "label",
+        "seconds",
+        "icon"
+      ],
+      "title": "TimerScene",
+      "type": "object"
+    },
+    "TitleCardScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+          "type": "string"
+        },
+        "narration": {
+          "maxLength": 400,
+          "minLength": 1,
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Source chunk ids supporting the scene",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "type": "number"
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioClip"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "template": {
+          "const": "title_card",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "subtitle": {
+          "anyOf": [
+            {
+              "maxLength": 140,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "narration",
+        "evidence",
+        "duration_s",
+        "audio",
+        "template",
+        "title",
+        "subtitle",
+        "icon"
+      ],
+      "title": "TitleCardScene",
+      "type": "object"
+    },
+    "WarningScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{0,31}$",
+          "type": "string"
+        },
+        "narration": {
+          "maxLength": 400,
+          "minLength": 1,
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Source chunk ids supporting the scene",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 30,
+          "type": "number"
+        },
+        "audio": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioClip"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "template": {
+          "const": "warning",
+          "type": "string"
+        },
+        "heading": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 140,
+          "minLength": 1,
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "narration",
+        "evidence",
+        "duration_s",
+        "audio",
+        "template",
+        "heading",
+        "text",
+        "icon"
+      ],
+      "title": "WarningScene",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "default": 1,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "title": {
+      "maxLength": 140,
+      "minLength": 1,
+      "type": "string"
+    },
+    "lang": {
+      "enum": [
+        "ka",
+        "en"
+      ],
+      "type": "string"
+    },
+    "source_lang": {
+      "enum": [
+        "ka",
+        "en"
+      ],
+      "type": "string"
+    },
+    "audience": {
+      "enum": [
+        "workplace",
+        "patient"
+      ],
+      "type": "string"
+    },
+    "voice": {
+      "default": "Kore",
+      "type": "string"
+    },
+    "theme": {
+      "default": "default",
+      "type": "string"
+    },
+    "target_sec": {
+      "maximum": 90,
+      "minimum": 15,
+      "type": "number"
+    },
+    "scenes": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "checklist": "#/$defs/ChecklistScene",
+            "disclaimer": "#/$defs/DisclaimerScene",
+            "do_dont": "#/$defs/DoDontScene",
+            "quiz_answer": "#/$defs/QuizAnswerScene",
+            "quiz_question": "#/$defs/QuizQuestionScene",
+            "schedule": "#/$defs/ScheduleScene",
+            "step_card": "#/$defs/StepCardScene",
+            "summary": "#/$defs/SummaryScene",
+            "timer": "#/$defs/TimerScene",
+            "title_card": "#/$defs/TitleCardScene",
+            "warning": "#/$defs/WarningScene"
+          },
+          "propertyName": "template"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/TitleCardScene"
+          },
+          {
+            "$ref": "#/$defs/StepCardScene"
+          },
+          {
+            "$ref": "#/$defs/DoDontScene"
+          },
+          {
+            "$ref": "#/$defs/ChecklistScene"
+          },
+          {
+            "$ref": "#/$defs/WarningScene"
+          },
+          {
+            "$ref": "#/$defs/TimerScene"
+          },
+          {
+            "$ref": "#/$defs/ScheduleScene"
+          },
+          {
+            "$ref": "#/$defs/QuizQuestionScene"
+          },
+          {
+            "$ref": "#/$defs/QuizAnswerScene"
+          },
+          {
+            "$ref": "#/$defs/SummaryScene"
+          },
+          {
+            "$ref": "#/$defs/DisclaimerScene"
+          }
+        ]
+      },
+      "maxItems": 24,
+      "minItems": 1,
+      "type": "array"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/SourceRef"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "version",
+    "title",
+    "lang",
+    "source_lang",
+    "audience",
+    "voice",
+    "theme",
+    "target_sec",
+    "scenes",
+    "sources"
+  ],
+  "title": "VideoSpec",
+  "type": "object",
+  "$comment": "GENERATED by `uv run python -m agent.schemas.export` - do not edit"
+}

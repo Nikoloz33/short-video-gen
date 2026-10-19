@@ -212,7 +212,12 @@ export const galleryId = (template: Template, lang: Lang): string =>
   `Gallery-${template.replace(/_/g, '-')}-${lang}`;
 
 export const galleryScene = (lang: Lang, template: Template): Scene =>
-  ({ ...GALLERY[lang][template], id: `${template}-${lang}`, evidence: [] }) as Scene;
+  ({
+    ...GALLERY[lang][template],
+    id: `${template.replace(/_/g, '-')}-${lang}`,
+    evidence: [],
+    audio: null,
+  }) as Scene;
 
 /** A one-scene spec, for previewing a single template. */
 export const gallerySpec = (lang: Lang, template: Template): VideoSpec => ({
@@ -223,7 +228,7 @@ export const gallerySpec = (lang: Lang, template: Template): VideoSpec => ({
   audience: template === 'disclaimer' || template === 'schedule' ? 'patient' : 'workplace',
   voice: 'Kore',
   theme: 'default',
-  target_sec: GALLERY[lang][template].duration_s,
+  target_sec: 30,
   scenes: [galleryScene(lang, template)],
   sources: [],
 });

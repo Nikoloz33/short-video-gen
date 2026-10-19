@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "title": "Handwashing in the kitchen",
+  "lang": "en",
+  "source_lang": "en",
+  "audience": "workplace",
+  "voice": "Kore",
+  "theme": "kitchen",
+  "target_sec": 50,
+  "scenes": [
+    {
+      "id": "s1",
+      "template": "title_card",
+      "title": "How to wash your hands",
+      "subtitle": "Kitchen hygiene · 6 steps",
+      "icon": "hand-wash",
+      "narration": "Clean hands stop germs from reaching food. Here is how to wash them correctly.",
+      "evidence": ["handwashing-sop:1:0"],
+      "duration_s": 4.5,
+      "audio": null
+    },
+    {
+      "id": "s2",
+      "template": "checklist",
+      "heading": "Before you start",
+      "items": ["Remove rings and watches", "Roll your sleeves up to the elbow", "Use the hand-wash sink only"],
+      "narration": "Before you start, remove rings and watches, roll your sleeves up and use the hand-wash sink only.",
+      "evidence": ["handwashing-sop:1:1"],
+      "duration_s": 6.5,
+      "audio": null
+    },
+    {
+      "id": "s3",
+      "template": "step_card",
+      "step_no": 1,
+      "total_steps": 5,
+      "icon": "droplets",
+      "text": "Wet your hands with *warm running water*",
+      "narration": "Step one: wet your hands with warm running water.",
+      "evidence": ["handwashing-sop:1:2"],
+      "duration_s": 4,
+      "audio": null
+    },
+    {
+      "id": "s4",
+      "template": "step_card",
+      "step_no": 2,
+      "total_steps": 5,
+      "icon": "soap",
+      "text": "Apply *liquid soap* from the dispenser",
+      "narration": "Step two: apply liquid soap from the dispenser.",
+      "evidence": ["handwashing-sop:1:2"],
+      "duration_s": 4,
+      "audio": null
+    },
+    {
+      "id": "s5",
+      "template": "timer",
+      "label": "Scrub for at least *20 seconds*",
+      "seconds": 20,
+      "icon": "hand-wash",
+      "narration": "Step three: scrub palms, backs, fingers and nails for at least twenty seconds.",
+      "evidence": ["handwashing-sop:1:3"],
+      "duration_s": 5.5,
+      "audio": null
+    },
+    {
+      "id": "s6",
+      "template": "step_card",
+      "step_no": 4,
+      "total_steps": 5,
+      "icon": "shower",
+      "text": "Rinse under running water",
+      "narration": "Step four: rinse under running water, fingertips pointing down.",
+      "evidence": ["handwashing-sop:1:3"],
+      "duration_s": 4.5,
+      "audio": null
+    },
+    {
+      "id": "s7",
+      "template": "do_dont",
+      "do_text": "Dry with a *single-use* paper towel",
+      "do_icon": "wind",
+      "dont_text": "Never dry your hands on your *apron*",
+      "dont_icon": "apron",
+      "narration": "Step five: dry with a single-use paper towel. Never dry your hands on your apron.",
+      "evidence": ["handwashing-sop:1:4"],
+      "duration_s": 6,
+      "audio": null
+    },
+    {
+      "id": "s8",
+      "template": "quiz_question",
+      "question": "How long should you scrub your hands?",
+      "options": ["5 seconds", "At least 20 seconds", "Until they feel dry"],
+      "correct_index": 1,
+      "countdown_s": 4,
+      "narration": "Quick quiz: how long should you scrub your hands?",
+      "evidence": ["handwashing-sop:1:3"],
+      "duration_s": 8,
+      "audio": null
+    },
+    {
+      "id": "s9",
+      "template": "quiz_answer",
+      "question": "How long should you scrub your hands?",
+      "options": ["5 seconds", "At least 20 seconds", "Until they feel dry"],
+      "correct_index": 1,
+      "explanation": "Scrub for at least 20 seconds before you rinse.",
+      "narration": "Correct answer: at least twenty seconds.",
+      "evidence": ["handwashing-sop:1:3"],
+      "duration_s": 4.5,
+      "audio": null
+    },
+    {
+      "id": "s10",
+      "template": "summary",
+      "heading": "Clean hands, safe food",
+      "points": ["Wet, soap, scrub for 20 seconds", "Rinse under running water", "Dry with a single-use towel"],
+      "narration": "Remember: wet, soap, scrub for twenty seconds, rinse, and dry with a single-use towel.",
+      "evidence": ["handwashing-sop:1:2", "handwashing-sop:1:3", "handwashing-sop:1:4"],
+      "duration_s": 6,
+      "audio": null
+    }
+  ],
+  "sources": [{ "doc_id": "handwashing-sop", "title": "Kitchen handwashing SOP" }]
+}

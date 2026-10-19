@@ -11,7 +11,8 @@
     "fonts": "tsx scripts/gen-fonts.ts",
     "still": "tsx scripts/still.ts",
     "gallery": "tsx scripts/gallery.ts",
-    "test:stills": "tsx scripts/gallery.ts --check"
+    "test:stills": "tsx scripts/gallery.ts --check",
+    "codegen": "tsx scripts/codegen.ts"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.530",
@@ -31,6 +32,8 @@
     "@types/node": "22.18.0",
     "@types/react": "19.2.2",
     "fontkit": "2.0.4",
+    "json-schema-to-typescript": "16.0.0",
+    "json-schema-to-zod": "2.8.1",
     "tsx": "4.20.6",
     "vitest": "5.0.5"
   }

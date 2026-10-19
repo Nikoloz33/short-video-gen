@@ -14,7 +14,7 @@ import {
   useVideoConfig,
 } from 'remotion';
 import { sceneCues } from './lib/captions';
-import type { Scene, VideoSpec } from './spec/types';
+import type { Scene, VideoProps, VideoSpec } from './spec/types';
 import { CAPTION_BOX } from './templates/boxes';
 import { FitLines, SceneProvider, useSceneCtx } from './templates/kit';
 import { SceneView } from './templates';
@@ -103,7 +103,7 @@ const SceneShell: React.FC<{ scene: Scene; frames: number }> = ({ scene, frames 
   );
 };
 
-export const InstructionVideo: React.FC<VideoSpec> = (spec) => {
+export const InstructionVideo: React.FC<VideoProps> = (spec) => {
   const { fps, durationInFrames } = useVideoConfig();
   const theme = resolveTheme(spec.theme);
   return (

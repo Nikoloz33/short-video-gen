@@ -8,21 +8,27 @@
  */
 import React from 'react';
 import { Composition, Still, type CalculateMetadataFunction } from 'remotion';
+import { z } from 'zod';
 import { GALLERY, TEMPLATES, galleryId, gallerySpec, galleryReel } from './examples/gallery';
+import { VideoSpecSchema } from './generated/spec.zod';
 import { IconSheet } from './IconSheet';
 import { InstructionVideo, totalSeconds } from './InstructionVideo';
 import { FPS, HEIGHT, WIDTH } from './lib/time';
-import type { Lang, VideoSpec } from './spec/types';
+import type { Lang, VideoProps, VideoSpec } from './spec/types';
 
-const calculateMetadata: CalculateMetadataFunction<VideoSpec> = ({ props }) => ({
-  durationInFrames: Math.max(1, Math.round(totalSeconds(props) * FPS)),
-});
+const calculateMetadata: CalculateMetadataFunction<VideoProps> = ({ props }) => {
+  // Defence in depth: the worker validated the spec already; validate (and apply defaults) again.
+  const parsed = VideoSpecSchema.safeParse(props);
+  if (!parsed.success) throw new Error(`invalid video spec:\n${z.prettifyError(parsed.error)}`);
+  const spec = parsed.data;
+  return { durationInFrames: Math.max(1, Math.round(totalSeconds(spec) * FPS)), props: spec };
+};
 
 const Video: React.FC<{ id: string; spec: VideoSpec }> = ({ id, spec }) => (
   <Composition
     id={id}
     component={InstructionVideo}
-    defaultProps={spec}
+    defaultProps={spec as VideoProps}
     calculateMetadata={calculateMetadata}
     durationInFrames={Math.max(1, Math.round(totalSeconds(spec) * FPS))}
     fps={FPS}

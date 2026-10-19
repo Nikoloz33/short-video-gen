@@ -1,0 +1,24 @@
+{
+  "_comment": "Each case patches handwash-en.json; both the Pydantic models and the generated zod schema must reject it.",
+  "cases": [
+    { "name": "unknown template", "path": ["scenes", 0, "template"], "value": "carousel" },
+    { "name": "missing narration", "path": ["scenes", 2, "narration"], "delete": true },
+    { "name": "empty narration", "path": ["scenes", 2, "narration"], "value": "" },
+    { "name": "extra field", "path": ["scenes", 2, "colour"], "value": "red" },
+    { "name": "too few checklist items", "path": ["scenes", 1, "items"], "value": ["only one"] },
+    { "name": "too many quiz options", "path": ["scenes", 7, "options"], "value": ["a", "b", "c", "d", "e"] },
+    { "name": "countdown too short", "path": ["scenes", 7, "countdown_s"], "value": 1 },
+    { "name": "bad language", "path": ["lang"], "value": "ru" },
+    { "name": "bad scene id", "path": ["scenes", 0, "id"], "value": "Scene One" },
+    { "name": "negative duration", "path": ["scenes", 0, "duration_s"], "value": -1 },
+    { "name": "no scenes", "path": ["scenes"], "value": [] },
+    { "name": "audio without src", "path": ["scenes", 0, "audio"], "value": { "duration_s": 2, "start_s": 0.3 } },
+    { "name": "target too long", "path": ["target_sec"], "value": 600 }
+  ],
+  "_python_only": [
+    { "name": "unknown icon", "path": ["scenes", 2, "icon"], "value": "mittens" },
+    { "name": "correct index out of range", "path": ["scenes", 7, "correct_index"], "value": 3 },
+    { "name": "step beyond total", "path": ["scenes", 2, "step_no"], "value": 9 },
+    { "name": "duplicate ids", "path": ["scenes", 3, "id"], "value": "s1" }
+  ]
+}

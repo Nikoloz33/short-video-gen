@@ -23,6 +23,7 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run mypy
+      - run: uv run python -m agent.schemas.export --check
       - run: uv run pytest
 
   video:
@@ -40,6 +41,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run format:check
+      - run: npm run codegen -w video -- --check
       - run: npm run typecheck -w video
       - run: npm test -w video
       - run: npm run render:smoke -w video

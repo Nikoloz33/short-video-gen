@@ -58,12 +58,13 @@ export const measureLoudness = async (file: string, preFilter?: string): Promise
   return JSON.parse(json) as Loudness;
 };
 
-export type FinalizeOptions = { durationSec: number; targetLufs?: number };
+export type FinalizeOptions = { durationSec: number; targetLufs?: number; normalize?: boolean };
 
 /**
  * Loudness-normalise the mixed narration to `targetLufs` (default -16, speech) with a static gain
  * and a soft limiter, then trim to the exact video length and move the moov atom up front.
- * The video stream is copied untouched. Silent inputs (no audio stream) are only remuxed.
+ * The video stream is copied untouched. Silent inputs (no audio stream) and `normalize: false`
+ * (previews) are only remuxed.
  */
 export const finalizeMp4 = async (
   input: string,
@@ -71,9 +72,8 @@ export const finalizeMp4 = async (
   opts: FinalizeOptions,
 ): Promise<Loudness | null> => {
   const target = opts.targetLufs ?? -16;
-  const info = await probe(input);
   const common = ['-t', opts.durationSec.toFixed(3), '-movflags', '+faststart', output];
-  if (info.acodec === 'none') {
+  if (opts.normalize === false || (await probe(input)).acodec === 'none') {
     await runOk(FFMPEG, ['-hide_banner', '-y', '-i', input, '-c', 'copy', ...common]);
     return null;
   }

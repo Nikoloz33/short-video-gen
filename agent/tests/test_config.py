@@ -29,7 +29,7 @@ def test_app_config_languages_and_presets() -> None:
     assert set(app.languages) == {"ka", "en"}
     assert app.languages["ka"].tts_code == "ka-GE"
     assert app.presets["final"].width == 1080
-    assert app.presets["preview"].fps == 30
+    assert app.presets["preview"].fps == 15
 
 
 def test_settings_ffmpeg_path(tmp_path: Path) -> None:

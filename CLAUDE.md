@@ -70,11 +70,22 @@ burned-in captions, quiz checkpoints. Product spec: `docs/brief.md` (single sour
 | `npm run render:smoke -w video` | bundle + tiny render + ffprobe check |
 | `npm run gallery -w video [-- --update]` | stills of every template (en+ka) → `out/gallery/contact-<lang>.png`; `--update` rewrites snapshots |
 | `uv run python -m agent.schemas.export [--check]` + `npm run codegen -w video [-- --check]` | contract export + TS/zod codegen |
+| `node node_modules/tsx/dist/cli.mjs video/scripts/render-worker.ts < req.json` | render worker (protocol: `docs/render-worker.md`) |
+| `npm run bench -w video` | preview + final render of the ~57 s reel, prints fps / realtime / stages |
 | `npm run test:stills -w video` | snapshot check (27x48 gray thumbnails, mean diff ≤ 6) |
 | `npm run studio -w video` | Remotion Studio |
 | `npm run fonts -w video` | copy Noto woff2 subsets to `video/public/fonts` + regenerate `src/catalog/fonts.json` / `font-metrics.json` |
 | `npm run still -w video -- <id> [--props f.json] [--frame N]` | one PNG into `out/stills/` (e.g. `IconSheet`) |
 | `npm run dev -w web` | web UI dev server |
+
+## Rendering
+- Presets: preview 540x960 @ 15 fps (`InstructionVideoPreview`, x264 ultrafast, no loudness pass),
+  final 1080x1920 @ 30 fps (`InstructionVideo`, whole-mix loudness to -16 LUFS). Templates time
+  everything in seconds via `useSec()`, so both frame rates render the same video.
+- Outputs per render: `video.mp4` (always h264 + AAC, `enforceAudioTrack`), `video.srt`, `video.vtt`,
+  `quiz.json`, `meta.json`. Bundle cached in `out/.bundle-cache/<hash>`.
+- Spawn Node scripts as `process.execPath` + `node_modules/tsx/dist/cli.mjs` — `shell: true` or `.cmd`
+  shims break on the space in the repo path. `npx tsx -e` hangs here; write a script file instead.
 
 ## Tooling gotchas
 - Bash heredocs mangle `${}`, backticks and `\n`: write scripts with the editor tools instead.

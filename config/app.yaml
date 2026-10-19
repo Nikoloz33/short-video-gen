@@ -12,5 +12,5 @@ recursion_limit: 80
 upload_retention_days: 30
 
 presets:
-  preview: { width: 540, height: 960, fps: 30, scale: 0.5, crf: 28 }
+  preview: { width: 540, height: 960, fps: 15, scale: 0.5, crf: 28 }
   final:   { width: 1080, height: 1920, fps: 30, scale: 1.0, crf: 20 }

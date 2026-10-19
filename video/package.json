@@ -12,7 +12,9 @@
     "still": "tsx scripts/still.ts",
     "gallery": "tsx scripts/gallery.ts",
     "test:stills": "tsx scripts/gallery.ts --check",
-    "codegen": "tsx scripts/codegen.ts"
+    "codegen": "tsx scripts/codegen.ts",
+    "worker": "tsx scripts/render-worker.ts",
+    "bench": "tsx scripts/bench.ts"
   },
   "dependencies": {
     "@remotion/bundler": "4.0.530",

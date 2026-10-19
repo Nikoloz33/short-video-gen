@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     ffmpeg_dir: Path = Path(r"C:\ffmpeg-7.1.1-essentials_build\bin")
     app_token: str = "dev-token"
     max_run_cost_usd: float = Field(default=2.0, gt=0)
+    #: Hard cap on all recorded spend (metrics.db ledger) — protects the trial credit.
+    max_total_spend_usd: float = Field(default=50.0, gt=0)
+    #: Cache model responses on disk (dev/tests). Never caches TTS audio (that has its own cache).
+    llm_cache: bool = False
+    #: Wire fake model/TTS backends (UI demos, e2e tests without cost).
+    app_fake: bool = False
     data_dir: Path = REPO_ROOT / "data"
     config_dir: Path = REPO_ROOT / "config"
     video_dir: Path = REPO_ROOT / "video"

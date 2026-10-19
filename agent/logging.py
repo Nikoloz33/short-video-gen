@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextvars
 import logging
 import sys
 from collections.abc import Iterator
@@ -39,8 +40,20 @@ def get_logger(name: str) -> structlog.stdlib.BoundLogger:
     return logger
 
 
+_thread_id: contextvars.ContextVar[str] = contextvars.ContextVar("thread_id", default="-")
+
+
+def current_thread_id() -> str:
+    """The project thread the current code runs for ('-' outside a run); used by the usage ledger."""
+    return _thread_id.get()
+
+
 @contextmanager
 def bound_thread(thread_id: str) -> Iterator[None]:
-    """Bind `thread_id` to every log line emitted inside the block."""
-    with structlog.contextvars.bound_contextvars(thread_id=thread_id):
-        yield
+    """Bind `thread_id` to every log line (and usage record) emitted inside the block."""
+    token = _thread_id.set(thread_id)
+    try:
+        with structlog.contextvars.bound_contextvars(thread_id=thread_id):
+            yield
+    finally:
+        _thread_id.reset(token)

@@ -14,7 +14,7 @@ import random
 import time
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
@@ -99,8 +99,8 @@ class StreamResult:
 @dataclass
 class RetryPolicy:
     attempts: int = 5
-    base_s: float = 1.0
-    cap_s: float = 30.0
+    base_s: float = 2.0
+    cap_s: float = 40.0
 
 
 class LLMRouter:
@@ -124,6 +124,9 @@ class LLMRouter:
         self.retry = retry or RetryPolicy()
         self._sleep = sleep
         self._rng = rng or random.Random()
+        #: model -> monotonic time until which it is skipped (it kept returning 429).
+        self._cooldown: dict[str, float] = {}
+        self.cooldown_s = 300.0
 
     # ---- budget ---------------------------------------------------------------------------------
     @contextmanager
@@ -205,7 +208,23 @@ class LLMRouter:
                 return hit, self._account(role, req.model, hit.usage, cached=True)
         self._check_budget()
         t0 = time.perf_counter()
-        resp = self._with_retry(role, lambda: self.backend.generate(req))
+        fb = self.models.role(role).fallback
+        cooling = fb is not None and self._cooldown.get(req.model, 0.0) > time.monotonic()
+        try:
+            if cooling:
+                raise RetryableError("model cooling down after repeated 429s", 429)
+            resp = self._with_retry(role, lambda: self.backend.generate(req))
+        except RetryableError as e:
+            if e.status != 429 or not fb:
+                raise
+            if not cooling:
+                self._cooldown[req.model] = time.monotonic() + self.cooldown_s
+            # Rate-limited model: run the same request on the fallback role's model.
+            fcfg = self.models.role(fb)
+            log.warning("falling back", role=role, to=fb, model=fcfg.model)
+            req = replace(req, model=fcfg.model, thinking_level=fcfg.thinking_level, temperature=None)
+            resp = self._with_retry(fb, lambda: self.backend.generate(req))
+            return resp, self._account(fb, req.model, resp.usage)
         log.info("llm call", role=role, model=req.model, ms=round((time.perf_counter() - t0) * 1000))
         if self.cache and key:
             self.cache.put(key, resp)

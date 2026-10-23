@@ -16,9 +16,11 @@ from agent.settings import Settings, get_settings
 def build_router(settings: Settings | None = None, fake_responses: dict[str, Any] | None = None) -> LLMRouter:
     s = settings or get_settings()
     models = load_models(s.config_dir)
-    ledger = Ledger(s.data_dir / "metrics.db")
     if s.app_fake or fake_responses is not None:
-        return LLMRouter(models, FakeBackend(models, fake_responses or {}), ledger=ledger)
+        # Fake spend goes to its own ledger so it never counts against the real budget.
+        fake_ledger = Ledger(s.data_dir / "metrics-fake.db")
+        return LLMRouter(models, FakeBackend(models, fake_responses or {}), ledger=fake_ledger)
+    ledger = Ledger(s.data_dir / "metrics.db")
     if not s.google_cloud_project:
         raise RuntimeError(
             "GOOGLE_CLOUD_PROJECT is not set (.env); run `gcloud auth application-default login`"

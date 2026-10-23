@@ -95,10 +95,10 @@ def test_retries_with_backoff_then_succeeds(tmp_path: Path) -> None:
 
 def test_retries_are_capped(tmp_path: Path) -> None:
     router, _, sleeps = make(
-        {"intake": [RetryableError("429", 429)] * 3}, tmp_path, retry=RetryPolicy(attempts=3)
+        {"plan": [RetryableError("429", 429)] * 3}, tmp_path, retry=RetryPolicy(attempts=3)
     )
     with pytest.raises(RetryableError):
-        router.text("intake", "q")
+        router.text("plan", "q")
     assert len(sleeps) == 2
 
 

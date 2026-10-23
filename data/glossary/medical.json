@@ -1,0 +1,29 @@
+{
+  "_comment": "en <-> ka terms the name gate maps across languages. Add terms as customers need them.",
+  "terms": [
+    { "kind": "body", "en": ["hand", "hands"], "ka": ["ხელი", "ხელები", "ხელის", "ხელებს", "ხელებზე"] },
+    { "kind": "body", "en": ["finger", "fingers"], "ka": ["თითი", "თითები", "თითებს", "თითებს შორის"] },
+    { "kind": "body", "en": ["nail", "nails", "fingernails"], "ka": ["ფრჩხილი", "ფრჩხილები", "ფრჩხილების"] },
+    { "kind": "body", "en": ["wrist", "wrists"], "ka": ["მაჯა", "მაჯები"] },
+    { "kind": "body", "en": ["eye", "eyes"], "ka": ["თვალი", "თვალები"] },
+    { "kind": "body", "en": ["wound", "incision"], "ka": ["ჭრილობა", "ჭრილობის", "განაკვეთი"] },
+    { "kind": "body", "en": ["stomach", "abdomen"], "ka": ["მუცელი", "კუჭი"] },
+    { "kind": "body", "en": ["chest"], "ka": ["გულმკერდი"] },
+    { "kind": "body", "en": ["leg", "legs"], "ka": ["ფეხი", "ფეხები"] },
+    { "kind": "body", "en": ["arm", "arms"], "ka": ["მკლავი", "მკლავები"] },
+    { "kind": "body", "en": ["skin"], "ka": ["კანი", "კანის"] },
+    { "kind": "body", "en": ["mouth"], "ka": ["პირი", "პირის"] },
+    { "kind": "body", "en": ["knee"], "ka": ["მუხლი"] },
+    { "kind": "body", "en": ["heart"], "ka": ["გული"] },
+    { "kind": "med", "en": ["paracetamol", "acetaminophen"], "ka": ["პარაცეტამოლი", "პარაცეტამოლის"] },
+    { "kind": "med", "en": ["ibuprofen"], "ka": ["იბუპროფენი", "იბუპროფენის"] },
+    { "kind": "med", "en": ["amoxicillin"], "ka": ["ამოქსიცილინი", "ამოქსიცილინის"] },
+    { "kind": "med", "en": ["aspirin"], "ka": ["ასპირინი", "ასპირინის"] },
+    { "kind": "med", "en": ["warfarin"], "ka": ["ვარფარინი", "ვარფარინის"] },
+    { "kind": "med", "en": ["metformin"], "ka": ["მეტფორმინი", "მეტფორმინის"] },
+    { "kind": "med", "en": ["insulin"], "ka": ["ინსულინი", "ინსულინის"] },
+    { "kind": "med", "en": ["omeprazole"], "ka": ["ომეპრაზოლი", "ომეპრაზოლის"] },
+    { "kind": "med", "en": ["antibiotic", "antibiotics"], "ka": ["ანტიბიოტიკი", "ანტიბიოტიკები", "ანტიბიოტიკის"] },
+    { "kind": "med", "en": ["painkiller", "pain reliever", "pain medicine"], "ka": ["ტკივილგამაყუჩებელი"] }
+  ]
+}

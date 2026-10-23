@@ -28,7 +28,7 @@ data/chroma/
 data/cache/
 data/*.sqlite
 data/*.sqlite-*
-data/metrics.db
+data/*.db
 video/public/media/
 *.log
 

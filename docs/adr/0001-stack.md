@@ -1,7 +1,7 @@
 # ADR 0001 — Stack and repository layout
 
 - Status: accepted
-- Date: 2026-09-15
+- Date: 2026-10-18
 
 ## Context
 

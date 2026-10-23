@@ -54,7 +54,13 @@ class VertexBackend(Backend):
         # One shared client, created lazily under a lock (embeddings run in a thread pool).
         with self._lock:
             if self._client is None:
-                self._client = genai.Client(vertexai=True, project=self._project, location=self._location)
+                # The router owns retries/backoff: disable the SDK's own (it waited ~1 min per attempt).
+                self._client = genai.Client(
+                    vertexai=True,
+                    project=self._project,
+                    location=self._location,
+                    http_options=types.HttpOptions(retry_options=types.HttpRetryOptions(attempts=1)),
+                )
             return self._client
 
     def _contents(self, req: GenRequest) -> list[types.Content]:

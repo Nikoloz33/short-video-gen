@@ -29,6 +29,8 @@ class ModelRole(BaseModel):
     voice: str | None = None
     dimensions: int | None = None
     pricing: Pricing = Field(default_factory=Pricing)
+    #: Role to use when this model stays rate-limited (429) after all retries.
+    fallback: str | None = None
 
 
 class ModelsConfig(BaseModel):

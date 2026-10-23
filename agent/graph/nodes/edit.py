@@ -16,8 +16,16 @@ from typing import Any
 from pydantic import ValidationError
 
 from agent.catalog import icon_names
+from agent.factcheck.checker import FactReport
 from agent.graph.deps import Deps, say, status
-from agent.graph.nodes.common import chunks_block, dump, icons_block, last_user_text, spec_of
+from agent.graph.nodes.common import (
+    chunks_block,
+    dump,
+    history_text,
+    icons_block,
+    last_user_text,
+    spec_of,
+)
 from agent.graph.nodes.script import LANG_NAME
 from agent.graph.state import RESET, GraphState
 from agent.llm.usage import Usage, merge_usage
@@ -34,13 +42,32 @@ class EditError(ValueError):
     pass
 
 
+def edit_context(state: GraphState) -> str:
+    """What the user is likely referring to: recent conversation + current problems. Without it,
+    "remove that text" or a pasted Georgian phrase got a "please clarify" reply."""
+    lines = [history_text(state.get("messages", [])[-8:-1]) or "(no earlier messages)"]
+    issues = state.get("layout_issues") or []
+    if issues:
+        lines.append("Texts that do not fit on screen right now:")
+        lines += [f"- [{i.get('scene_id')}] {i.get('field')}: {i.get('message')}" for i in issues]
+    report = FactReport.model_validate(state.get("fact_report") or {"scenes": []})
+    flagged = report.flagged()
+    if flagged:
+        lines.append("Claims the fact-check flagged:")
+        lines += [f"- [{s.scene_id}] {c.text} ({c.verdict})" for s, _i, c in flagged]
+    return "\n".join(lines)
+
+
 def make_chat_edit(deps: Deps) -> Any:
     def chat_edit(state: GraphState) -> dict[str, Any]:
         spec = spec_of(state)
         r = deps.router.structured(
             "chat_edit",
             load_prompt("chat_edit").render(
-                icons=icons_block(), outline=outline(spec), message=last_user_text(state)
+                icons=icons_block(),
+                outline=outline(spec),
+                context=edit_context(state),
+                message=last_user_text(state),
             ),
             EditPlan,
         )

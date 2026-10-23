@@ -22,6 +22,15 @@ export const sceneMarks = (messages: Message[]): Record<string, MarkKind> => {
   return {};
 };
 
+/** Claims of the latest fact-check still waiting for the reviewer's decision. */
+export const flaggedCount = (messages: Message[]): number => {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const card = messages[i]!.card;
+    if (card?.kind === 'fact_check') return Number(card.flagged ?? 0);
+  }
+  return 0;
+};
+
 export const App = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [projects, setProjects] = useState<{ id: string; title: string }[]>([]);
@@ -85,7 +94,13 @@ export const App = () => {
     if (!pid) return;
     dispatch({ type: 'user_message', text: r.text ?? r.label });
     if (r.action === 'retry') void run(`/api/projects/${pid}/retry`, {});
-    else void run(`/api/projects/${pid}/resume`, { action: r.action, text: r.text });
+    else
+      void run(`/api/projects/${pid}/resume`, {
+        action: r.action,
+        text: r.text,
+        scene_id: r.scene_id,
+        index: r.index,
+      });
   };
 
   const onUpload = async (f: File) => {
@@ -145,7 +160,10 @@ export const App = () => {
           busy={state.busy}
           status={state.status}
           error={state.error}
-          replies={state.busy ? [] : quickReplies(state.pending, lang, state.canRetry)}
+          replies={
+            state.busy ? [] : quickReplies(state.pending, lang, state.canRetry, flaggedCount(state.messages))
+          }
+          onDecide={state.pending?.kind === 'script' ? onReply : undefined}
           projectId={pid}
           onSend={onSend}
           onReply={onReply}

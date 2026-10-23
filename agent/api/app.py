@@ -46,8 +46,14 @@ class SendMessage(BaseModel):
 
 
 class Resume(BaseModel):
-    action: Literal["approve", "edit", "regenerate"]
+    action: Literal[
+        "approve", "edit", "regenerate",
+        "keep_claim", "remove_claim", "keep_flagged", "remove_flagged", "fix_flagged",
+    ]  # fmt: skip
     text: str | None = None
+    #: For keep_claim / remove_claim: which flagged claim.
+    scene_id: str | None = None
+    index: int | None = None
 
 
 def create_app(settings: Settings | None = None, runner: Runner | None = None) -> FastAPI:
@@ -214,7 +220,11 @@ def create_app(settings: Settings | None = None, runner: Runner | None = None) -
         project_or_404(r, pid)
         if r.pending_interrupt(pid) is None:
             raise HTTPException(409, "nothing is waiting for review")
-        return sse(r, pid, r.run(pid, resume={"action": body.action, "text": body.text or "", "user": user}))
+        return sse(
+            r,
+            pid,
+            r.run(pid, resume={**body.model_dump(exclude_none=True), "text": body.text or "", "user": user}),
+        )
 
     @app.post("/api/projects/{pid}/retry", dependencies=[Depends(auth)])
     def retry(pid: str, r: Runner = Depends(get_runner)) -> EventSourceResponse:

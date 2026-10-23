@@ -186,4 +186,12 @@ describe('quick replies', () => {
     expect(video[0]!.label).toBe('Approve final video');
     expect(video.find((r) => r.label === 'Switch to Georgian')?.text).toMatch(/Georgian/);
   });
+
+  it('offers claim decisions when the fact-check flagged claims', () => {
+    const one = quickReplies({ kind: 'script' }, 'en', false, 1);
+    expect(one.map((r) => r.action)).toEqual(['keep_flagged', 'remove_flagged', 'fix_flagged', 'regenerate']);
+    expect(one[0]!.label).toBe('Keep the flagged claim and approve');
+    expect(quickReplies({ kind: 'script' }, 'en', false, 3)[1]!.label).toBe('Remove the 3 flagged claims');
+    expect(quickReplies({ kind: 'video' }, 'en', false, 3)[0]!.action).toBe('approve');
+  });
 });

@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from agent.config import Language, load_app
 from agent.schemas.llm_io import DraftScene, ScriptDraft
@@ -164,25 +164,98 @@ def _fill_defaults(d: DraftScene) -> DraftScene:
         for r in data["rows"]:
             if r.get("icon") and r["icon"] not in known:
                 r["icon"] = None
-    first_sentence = re.split(r"(?<=[.!?])\s", d.narration.strip())[0][:120]
-    if d.template == "step_card" and not d.text:
-        data["text"] = first_sentence
-    if d.template == "warning":
-        data["heading"] = data.get("heading") or first_sentence
-        data["text"] = data.get("text") or first_sentence
-    if d.template == "timer" and not d.label:
-        data["label"] = first_sentence
+    # Missing texts are filled by _coerce_fields (synonym fields first, then the narration).
     return DraftScene.model_validate(data)
+
+
+# Where to take a required text from when the model filled a sibling field instead (seen live:
+# "warning.title", "disclaimer.explanation", "summary.items").
+_SYNONYMS: dict[str, tuple[str, ...]] = {
+    "title": ("heading", "text", "label"),
+    "heading": ("title", "label", "text", "question"),
+    "text": ("subtitle", "explanation", "label", "heading", "title"),
+    "label": ("text", "heading", "title"),
+    "question": ("text", "heading", "title"),
+    "explanation": ("text", "subtitle"),
+    "items": ("points", "options"),
+    "points": ("items", "options"),
+    "options": ("items", "points"),
+}
+_LIST_LIMITS = {"items": 5, "points": 4, "options": 4, "rows": 5}
+NARRATION_MAX = 400
+TEXT_MAX = 140
+
+
+def _clip(text: str, limit: int) -> str:
+    """Shortens at a sentence (or word) boundary; never mid-word."""
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    for sep in (". ", "! ", "? ", "; ", ", ", " "):
+        at = cut.rfind(sep)
+        if at > limit // 2:
+            return cut[: at + (1 if sep.strip() else 0)].strip()
+    return cut.strip()
+
+
+def _template_fields(template: str) -> dict[str, Any]:
+    from agent.schemas import video_spec as vs
+
+    models: dict[str, type[BaseModel]] = {
+        "title_card": vs.TitleCardScene, "step_card": vs.StepCardScene, "do_dont": vs.DoDontScene,
+        "checklist": vs.ChecklistScene, "warning": vs.WarningScene, "timer": vs.TimerScene,
+        "schedule": vs.ScheduleScene, "quiz_question": vs.QuizQuestionScene, "quiz_answer": vs.QuizAnswerScene,
+        "summary": vs.SummaryScene, "disclaimer": vs.DisclaimerScene,
+    }  # fmt: skip
+    cls = models[template]
+    return dict(cls.model_fields)
+
+
+def _coerce_fields(data: dict[str, Any]) -> dict[str, Any]:
+    """Keeps only the template's own fields, fills required ones from synonyms, clamps lengths."""
+    fields = _template_fields(str(data["template"]))
+    out = {k: v for k, v in data.items() if k in fields}
+    for name, info in fields.items():
+        if out.get(name) not in (None, "", []):
+            continue
+        for alt in _SYNONYMS.get(name, ()):
+            if data.get(alt) not in (None, "", []):
+                out[name] = data[alt]
+                break
+        if (
+            out.get(name) in (None, "", [])
+            and info.is_required()
+            and name in ("text", "heading", "label", "title")
+        ):
+            out[name] = re.split(r"(?<=[.!?])\s", str(data.get("narration", "")).strip())[0]
+    for name, limit in _LIST_LIMITS.items():
+        if isinstance(out.get(name), list):
+            out[name] = out[name][:limit]
+    for name, value in list(out.items()):
+        if isinstance(value, str) and name not in (
+            "narration",
+            "id",
+            "template",
+            "icon",
+            "do_icon",
+            "dont_icon",
+        ):
+            out[name] = _clip(value, 300 if name == "text" and data["template"] == "disclaimer" else TEXT_MAX)
+        elif isinstance(value, list) and value and isinstance(value[0], str):
+            out[name] = [_clip(v, TEXT_MAX) for v in value]
+    out["narration"] = _clip(str(data.get("narration", "")), NARRATION_MAX)
+    return out
 
 
 def _scene_dict(d: DraftScene, sid: str) -> dict[str, Any]:
     d = _fill_defaults(d)
     data = {k: v for k, v in d.model_dump().items() if v is not None}
+    if d.rows is not None:
+        data["rows"] = [r.model_dump() for r in d.rows]
+    data = _coerce_fields(data)
     data["id"] = sid
     data["duration_s"] = 5.0
     data["audio"] = None
-    if d.rows is not None:
-        data["rows"] = [r.model_dump() for r in d.rows]
     return data
 
 

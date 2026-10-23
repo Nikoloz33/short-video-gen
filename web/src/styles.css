@@ -547,6 +547,22 @@ select {
   color: var(--ink-2);
 }
 
+.claim-kept {
+  color: var(--safe);
+  font-size: var(--t-s);
+  font-weight: 600;
+}
+
+.claim-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn.small {
+  padding: 4px 12px;
+}
+
 .source-quote {
   margin-top: 6px;
   padding: 8px 10px;

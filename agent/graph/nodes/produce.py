@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextvars
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +18,9 @@ from agent.render.worker import Preset, RenderError
 from agent.script import apply_audio
 from agent.tts.narrator import NarrationError
 
+#: Parallel TTS requests (Gemini TTS quota is low per minute; the router backs off on 429).
+TTS_WORKERS = 3
+
 
 def make_narrate(deps: Deps) -> Any:
     def narrate(state: GraphState) -> dict[str, Any]:
@@ -24,28 +29,40 @@ def make_narrate(deps: Deps) -> Any:
         hits = synthesized = 0
         t0 = time.time()
         todo = [s for s in spec.scenes if s.audio is None]
-        scenes = []
-        done = 0
-        for s in spec.scenes:
-            if s.audio is not None:
-                scenes.append(s)
-                continue
-            try:
-                clip, u = deps.narrator.synth(s.narration.replace("*", ""), spec.lang, spec.voice)
-            except NarrationError as e:
-                # Raise instead of ending the run: the checkpoint stays on this node, so Retry resumes
-                # here and every clip already made comes back from the cache.
-                raise NarrationError(
-                    f"Narration failed for scene {s.id}: {e}. Press Retry to try again."
-                ) from e
-            usage = merge_usage(usage, u)
-            hits += clip.cache_hit
-            synthesized += not clip.cache_hit
-            rel = clip.path.relative_to(deps.media_root).as_posix()
-            scenes.append(apply_audio(s, rel, clip.duration_s))
-            done += 1
-            emit({"type": "render_progress", "stage": "tts", "done": done, "total": len(todo),
-                  "cache_hits": hits, "elapsedMs": int((time.time() - t0) * 1000)})  # fmt: skip
+        clips: dict[str, Any] = {}
+        failures: list[str] = []
+
+        def one(scene: Any) -> tuple[str, Any, Usage]:
+            clip, u = deps.narrator.synth(scene.narration.replace("*", ""), spec.lang, spec.voice)
+            return scene.id, clip, u
+
+        # A few clips at a time: much faster than one by one, gentle on the low TTS quota. Each worker
+        # runs in a copy of this context so the spend budget and thread id follow the calls.
+        ctx = contextvars.copy_context()
+        with ThreadPoolExecutor(max_workers=TTS_WORKERS) as pool:
+            futures = {pool.submit(ctx.copy().run, one, s): s.id for s in todo}
+            for fut in as_completed(futures):
+                try:
+                    sid, clip, u = fut.result()
+                except NarrationError as e:
+                    failures.append(f"scene {futures[fut]}: {e}")
+                    continue
+                clips[sid] = clip
+                usage = merge_usage(usage, u)
+                hits += clip.cache_hit
+                synthesized += not clip.cache_hit
+                emit({"type": "render_progress", "stage": "tts", "done": len(clips), "total": len(todo),
+                      "cache_hits": hits, "elapsedMs": int((time.time() - t0) * 1000)})  # fmt: skip
+        if failures:
+            # Raise instead of ending the run: the checkpoint stays on this node, so Retry resumes here
+            # and every clip already made comes back from the cache.
+            raise NarrationError(f"Narration failed for {'; '.join(failures)}. Press Retry to try again.")
+        scenes = [
+            apply_audio(s, clips[s.id].path.relative_to(deps.media_root).as_posix(), clips[s.id].duration_s)
+            if s.id in clips
+            else s
+            for s in spec.scenes
+        ]
         out = spec.model_copy(update={"scenes": scenes})
         deps.projects.save_spec(state["project_id"], out)
         stats = {"clips": len(spec.scenes), "synthesized": synthesized, "cache_hits": hits + (len(spec.scenes) - len(todo)),

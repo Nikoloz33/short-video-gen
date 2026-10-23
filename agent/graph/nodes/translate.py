@@ -8,6 +8,7 @@ from typing import Any
 from agent.factcheck.checker import FactReport
 from agent.graph.deps import Deps, say, status
 from agent.graph.nodes.common import dump, spec_of, target_lang
+from agent.graph.nodes.script import text_issues
 from agent.graph.state import GraphState
 from agent.translate import LANG_NAME, translate_spec
 
@@ -22,6 +23,8 @@ def make_translate(deps: Deps) -> Any:
         report = FactReport.model_validate(state.get("fact_report") or {"scenes": []})
         for s in report.scenes:
             s.translation_problems = problems.get(s.scene_id, [])
+        # Georgian is ~15 % wider than English: catch overflowing texts now, before narration.
+        overflow = text_issues(deps, out)
         card = {"kind": "translation", "to": target, "problems": problems}
         msg = f"Translated to {LANG_NAME[target]}" + (
             f"; {len(problems)} scene(s) need a look."
@@ -33,6 +36,7 @@ def make_translate(deps: Deps) -> Any:
             **status("translating"),
             "spec": dump(out),
             "fact_report": report.model_dump(),
+            "layout_issues": overflow,
             "versions": [{"version": out.version, "note": f"translated to {target}", "created": time.time()}],
             "usage": usage.model_dump(),
         }
@@ -42,6 +46,7 @@ def make_translate(deps: Deps) -> Any:
 
 def route_after_translate(state: GraphState) -> str:
     report = FactReport.model_validate(state.get("fact_report") or {"scenes": []})
-    if any(s.translation_problems for s in report.scenes) and state.get("fix_loops", 0) < 2:
+    needs_fix = any(s.translation_problems for s in report.scenes) or state.get("layout_issues")
+    if needs_fix and state.get("layout_loops", 0) < 2:
         return "fix_script"
     return "narrate" if state.get("script_approved") else "present_script"

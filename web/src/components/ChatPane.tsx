@@ -3,19 +3,34 @@ import { statusLabel, WORKING } from '../labels';
 import type { Message } from '../reducer';
 import { CardView } from './Cards';
 
+export type ClaimAction = 'keep_claim' | 'remove_claim' | 'keep_flagged' | 'remove_flagged' | 'fix_flagged';
+
 export type QuickReply = {
   label: string;
-  action: 'approve' | 'regenerate' | 'edit' | 'retry';
+  action: 'approve' | 'regenerate' | 'edit' | 'retry' | ClaimAction;
   text?: string;
+  scene_id?: string;
+  index?: number;
 };
 
 export const quickReplies = (
   pending: { kind: 'script' | 'video' } | null,
   lang: string | null,
   canRetry = false,
+  flagged = 0,
 ): QuickReply[] => {
   if (!pending) return canRetry ? [{ label: 'Retry', action: 'retry' }] : [];
   const other = lang === 'ka' ? 'English' : 'Georgian';
+  if (pending.kind === 'script' && flagged > 0) {
+    // Flagged claims are the reviewer's call: decide them now instead of waiting for repair loops.
+    const them = flagged === 1 ? 'the flagged claim' : `the ${flagged} flagged claims`;
+    return [
+      { label: `Keep ${them} and approve`, action: 'keep_flagged' },
+      { label: `Remove ${them}`, action: 'remove_flagged' },
+      { label: `Let the agent fix ${flagged === 1 ? 'it' : 'them'}`, action: 'fix_flagged' },
+      { label: 'Regenerate', action: 'regenerate' },
+    ];
+  }
   if (pending.kind === 'script') {
     return [
       { label: 'Approve script', action: 'approve' },
@@ -47,6 +62,8 @@ type Props = {
   onSend: (text: string) => void;
   onReply: (r: QuickReply) => void;
   onUpload: (f: File) => void;
+  /** Set while the script waits for review: per-claim Keep / Remove on the latest fact-check. */
+  onDecide?: (r: QuickReply) => void;
 };
 
 export const ChatPane = (p: Props) => {
@@ -71,6 +88,10 @@ export const ChatPane = (p: Props) => {
     const f = e.dataTransfer.files?.[0];
     if (f && canUpload) p.onUpload(f);
   };
+  let lastFact = -1;
+  p.messages.forEach((m, i) => {
+    if (m.card?.kind === 'fact_check') lastFact = i;
+  });
   const working = p.busy || (WORKING.has(p.status) && !p.replies.some((r) => r.action === 'retry'));
 
   return (
@@ -109,12 +130,14 @@ export const ChatPane = (p: Props) => {
             </button>
           </div>
         ) : null}
-        {p.messages.map((m) => (
+        {p.messages.map((m, i) => (
           <article key={m.id} className={`msg from-${m.role}`}>
             {m.text && !SELF_EXPLAINING.has(String(m.card?.kind)) ? (
               <p className="msg-text">{m.text}</p>
             ) : null}
-            {m.card ? <CardView card={m.card} /> : null}
+            {m.card ? (
+              <CardView card={m.card} onDecide={i === lastFact && !p.busy ? p.onDecide : undefined} />
+            ) : null}
           </article>
         ))}
         {p.error ? (

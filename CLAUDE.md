@@ -41,7 +41,10 @@ burned-in captions, quiz checkpoints. Product spec: `docs/brief.md` (single sour
   globals). Routing functions only read state; nodes write a one-shot `route` hint that the
   `_clears_route` wrapper resets — `check_scene` (parallel `Send` branches) is registered unwrapped.
 - Human checkpoints: `present_*` posts the card, `review_*` only calls `interrupt()` (nodes re-run
-  from the top on resume — no side effects there). Resume payload `{action: approve|edit|regenerate, text, user}`.
+  from the top on resume — no side effects there). Resume payload `{action: approve|edit|regenerate, text, user}`; flagged claims are
+  decided at the script review (`keep_claim`/`remove_claim` + `scene_id`/`index`, `keep_flagged`,
+  `remove_flagged`, `fix_flagged` → `decide_claims` in `nodes/review.py`, audit-logged). Only ONE
+  automatic fact-repair loop runs before the user sees the script.
 - `Runner` (`agent/graph/runner.py`): SqliteSaver at `data/checkpoints.sqlite`, thread_id = project id,
   stream modes updates+custom, spend budget + thread id bound per run. A run must stay on ONE thread
   (context vars): the API runs it in a worker thread and pipes events through a queue.

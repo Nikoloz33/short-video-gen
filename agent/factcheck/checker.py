@@ -25,6 +25,12 @@ class ClaimReport(BaseModel):
     quote: str | None = None
     why: str = ""
     gate: str | None = Field(default=None, description="Deterministic gate that overrode the LLM")
+    #: Who kept this flagged claim on purpose (the reviewer takes responsibility; audit-logged).
+    confirmed_by: str | None = None
+
+    @property
+    def accepted(self) -> bool:
+        return self.verdict == "supported" or self.confirmed_by is not None
 
 
 class SceneReport(BaseModel):
@@ -35,7 +41,7 @@ class SceneReport(BaseModel):
     translation_problems: list[str] = Field(default_factory=list)
 
     def problems(self) -> list[str]:
-        out = [f'"{c.text}": {c.verdict} — {c.why}' for c in self.claims if c.verdict != "supported"]
+        out = [f'"{c.text}": {c.verdict} — {c.why}' for c in self.claims if not c.accepted]
         return out + self.translation_problems
 
 
@@ -52,6 +58,21 @@ class FactReport(BaseModel):
     def signature(self) -> str:
         """Identifies the failure set: an unchanged signature after a fix means the fix loop is stuck."""
         return "|".join(sorted(f"{s.scene_id}:{len(s.problems())}" for s in self.failing()))
+
+    def flagged(self) -> list[tuple[SceneReport, int, ClaimReport]]:
+        """Claims still needing a decision: (scene, index, claim)."""
+        return [(s, i, c) for s in self.scenes for i, c in enumerate(s.claims) if not c.accepted]
+
+    def confirm(self, scene_id: str | None, index: int | None, user: str) -> list[ClaimReport]:
+        """Marks one flagged claim (or all, when scene_id is None) as kept by the given user."""
+        done: list[ClaimReport] = []
+        for s, i, c in self.flagged():
+            if scene_id is None or (s.scene_id == scene_id and i == index):
+                c.confirmed_by = user
+                done.append(c)
+        for s in self.scenes:
+            s.ok = all(c.accepted for c in s.claims)
+        return done
 
     def counts(self) -> dict[str, int]:
         out: dict[str, int] = {}

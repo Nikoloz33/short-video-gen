@@ -153,6 +153,11 @@ class ProjectStore:
             (self.version_dir(project_id, version) / "spec.json").read_text("utf-8")
         )
 
+    def audit_event(self, project_id: str, event: str, **data: Any) -> None:
+        """Append-only audit trail (approvals, kept/removed claims) with who and when."""
+        with (self.dir(project_id) / "audit.jsonl").open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": time.time(), "event": event, **data}, ensure_ascii=False) + "\n")
+
     def record_approval(self, project_id: str, version: int, user: str) -> None:
         """Audit log: who approved which version for final export (append-only JSON lines)."""
         with (self.dir(project_id) / "audit.jsonl").open("a", encoding="utf-8") as f:

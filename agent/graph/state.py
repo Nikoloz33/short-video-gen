@@ -45,6 +45,8 @@ class GraphState(TypedDict, total=False):
     layout_loops: int
     last_signature: str
     layout_issues: list[dict[str, Any]]
+    #: User-requested scene changes for fix_script: [{scene_id, instruction}] (e.g. remove a claim).
+    fix_requests: list[dict[str, Any]]
     script_approved: bool
     #: One entry per saved spec version: {version, note, created}.
     versions: Annotated[list[dict[str, Any]], operator.add]

@@ -93,4 +93,51 @@ describe('App', () => {
     await waitFor(() => expect(bodies).toEqual([JSON.stringify({ text: 'make step 3 shorter' })]));
     expect(screen.getByText('make step 3 shorter')).toBeInTheDocument();
   });
+
+  it('sends a per-claim decision from the fact-check ledger', async () => {
+    const bodies: unknown[] = [];
+    const flagged = {
+      ...snapshot,
+      messages: [
+        {
+          role: 'agent',
+          text: 'Fact-check',
+          card: {
+            kind: 'fact_check',
+            ok: false,
+            flagged: 1,
+            counts: { supported: 1, unsupported: 1 },
+            scenes: [
+              {
+                scene_id: 's3',
+                ok: false,
+                translation_problems: [],
+                claims: [
+                  { text: 'Wash for 20 s', verdict: 'supported', why: '', index: 0 },
+                  { text: 'Use hot water', verdict: 'unsupported', why: 'not in source', index: 1 },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url === '/api/projects')
+          return new Response(JSON.stringify([{ id: 'abc123', title: 'Kitchen' }]));
+        if (url.endsWith('/resume')) {
+          bodies.push(JSON.parse(String(init?.body)));
+          return new Response(sseBody([{ type: 'done', status: 'awaiting_script_review' }]));
+        }
+        return new Response(JSON.stringify(flagged));
+      }),
+    );
+    render(<App />);
+    expect(await screen.findByText('Keep the flagged claim and approve')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toMatchObject({ action: 'remove_claim', scene_id: 's3', index: 1 });
+  });
 });

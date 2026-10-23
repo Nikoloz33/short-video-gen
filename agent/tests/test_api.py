@@ -74,6 +74,12 @@ def test_full_flow_over_http(client: tuple[TestClient, Runner]) -> None:
         m["card"] and m["card"]["kind"] == "fact_check" for m in snap["messages"] if m["role"] == "agent"
     )
 
+    # Per-claim decisions carry the claim's address; unknown actions are rejected.
+    assert c.post(f"/api/projects/{pid}/resume", json={"action": "drop"}, headers=H).status_code == 422
+    evs = sse(c, f"/api/projects/{pid}/resume", {"action": "keep_claim", "scene_id": "s2", "index": 0})
+    assert any(e["type"] == "card" and e["card"]["kind"] == "fact_check" for e in evs)
+    assert evs[-2]["type"] == "awaiting_review"
+
     evs = sse(c, f"/api/projects/{pid}/resume", {"action": "approve"})
     order = [e["type"] for e in evs]
     assert "render_progress" in order and order.index("render_progress") < order.index("render_done")

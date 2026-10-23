@@ -85,7 +85,11 @@ def build_graph(
         "translate", translate.route_after_translate, ["fix_script", "present_script", "narrate"]
     )
     g.add_edge("present_script", "review_script")
-    g.add_conditional_edges("review_script", _route("narrate"), ["narrate", "write_script", "chat_edit"])
+    g.add_conditional_edges(
+        "review_script",
+        _route("narrate"),
+        ["narrate", "write_script", "chat_edit", "fact_reduce", "fix_script"],
+    )
     g.add_conditional_edges("narrate", _route("layout_check"), ["layout_check", END])
     g.add_conditional_edges("layout_check", _route("render_preview"), ["render_preview", "fix_script", END])
     g.add_conditional_edges("render_preview", _route("validate_video"), ["validate_video", END])

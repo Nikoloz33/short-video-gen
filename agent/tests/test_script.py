@@ -101,3 +101,29 @@ def test_durations_audio_and_helpers() -> None:
     nums = [s.step_no for s in renumber(shuffled).scenes if s.template == "step_card"]
     assert nums == [1, 2, 3]
     assert "[s8] quiz_question" in outline(SPEC)
+
+
+def test_misnamed_fields_are_coerced_into_valid_scenes() -> None:
+    # Seen live: a warning with "title" instead of "heading", a summary with "items" instead of
+    # "points", stray fields of other templates, and over-long lists and narration.
+    scenes = draft_scenes(
+        [
+            d(template="warning", title="Never reuse gloves", text="Throw them away.", items=["x"]),
+            d(template="summary", heading="Remember", items=["One", "Two", "Three", "Four", "Five"]),
+            d(template="checklist", heading="Kit", items=["a", "b", "c", "d", "e", "f", "g"],
+              narration="Long. " * 200),
+        ],
+        "en",
+    )  # fmt: skip
+    warn, summary, checklist = (s.model_dump() for s in scenes)
+    assert warn["heading"] == "Never reuse gloves" and "items" not in warn
+    assert summary["points"] == ["One", "Two", "Three", "Four"]
+    assert len(checklist["items"]) == 5 and len(checklist["narration"]) <= 400
+    assert checklist["narration"].endswith(".")
+
+
+def test_required_heading_falls_back_to_the_first_narration_sentence() -> None:
+    (scene,) = draft_scenes(
+        [d(template="checklist", items=["a", "b"], narration="Check your kit. Then start.")], "en"
+    )
+    assert scene.model_dump()["heading"] == "Check your kit."

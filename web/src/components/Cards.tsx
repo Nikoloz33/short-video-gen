@@ -1,6 +1,7 @@
 /** Inline chat cards. Each kind has its own shape: a ledger for facts, a sequence for the plan,
  * a storyboard for the script — not one generic box. */
 import type { Card } from '../api';
+import type { QuickReply } from './ChatPane';
 import { GATE, TEMPLATE, VERDICT } from '../labels';
 import { Mark, markOf } from './Mark';
 
@@ -12,14 +13,17 @@ type Claim = {
   quote?: string | null;
   chunk_id?: string | null;
   source?: string | null;
+  index?: number;
+  confirmed_by?: string | null;
 };
+type Decide = (r: QuickReply) => void;
 type FactScene = { scene_id: string; ok: boolean; claims: Claim[]; translation_problems: string[] };
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-const ClaimRow = ({ c }: { c: Claim }) => (
+const ClaimRow = ({ c, sceneId, onDecide }: { c: Claim; sceneId?: string; onDecide?: Decide }) => (
   <li className="claim">
-    <Mark kind={markOf(c.verdict)} />
+    <Mark kind={c.confirmed_by ? 'ok' : markOf(c.verdict)} />
     <div>
       <p className="claim-text">{c.text}</p>
       {c.verdict !== 'supported' ? (
@@ -33,11 +37,39 @@ const ClaimRow = ({ c }: { c: Claim }) => (
           {c.quote || c.source}
         </blockquote>
       ) : null}
+      {c.confirmed_by ? <p className="claim-kept">Kept by {c.confirmed_by}</p> : null}
+      {onDecide && sceneId && !c.confirmed_by && c.verdict !== 'supported' ? (
+        <div className="claim-actions" role="group" aria-label="Decide this claim">
+          <button
+            type="button"
+            className="btn small"
+            onClick={() =>
+              onDecide({ label: `Keep: ${c.text}`, action: 'keep_claim', scene_id: sceneId, index: c.index })
+            }
+          >
+            Keep
+          </button>
+          <button
+            type="button"
+            className="btn small"
+            onClick={() =>
+              onDecide({
+                label: `Remove: ${c.text}`,
+                action: 'remove_claim',
+                scene_id: sceneId,
+                index: c.index,
+              })
+            }
+          >
+            Remove
+          </button>
+        </div>
+      ) : null}
     </div>
   </li>
 );
 
-const FactLedger = ({ card }: { card: Card }) => {
+const FactLedger = ({ card, onDecide }: { card: Card; onDecide?: Decide }) => {
   const scenes = (card.scenes as FactScene[]) ?? [];
   const counts = (card.counts as Record<string, number>) ?? {};
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -67,7 +99,7 @@ const FactLedger = ({ card }: { card: Card }) => {
             {s.claims
               .filter((c) => c.verdict !== 'supported')
               .map((c, i) => (
-                <ClaimRow key={i} c={c} />
+                <ClaimRow key={i} c={c} sceneId={s.scene_id} onDecide={onDecide} />
               ))}
             {s.translation_problems.map((p, i) => (
               <li key={`t${i}`} className="claim">
@@ -295,10 +327,10 @@ const Simple = ({ card }: { card: Card }) => {
   }
 };
 
-export const CardView = ({ card }: { card: Card }) => {
+export const CardView = ({ card, onDecide }: { card: Card; onDecide?: Decide }) => {
   switch (card.kind) {
     case 'fact_check':
-      return <FactLedger card={card} />;
+      return <FactLedger card={card} onDecide={onDecide} />;
     case 'script':
       return <Storyboard card={card} />;
     case 'plan':

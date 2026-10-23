@@ -62,6 +62,8 @@ def make_fact_reduce(deps: Deps) -> Any:
                     "ok": s.ok and not s.translation_problems,
                     "claims": [
                         {
+                            "index": i,
+                            "confirmed_by": c.confirmed_by,
                             "text": c.text,
                             "verdict": c.verdict,
                             "why": c.why,
@@ -74,7 +76,7 @@ def make_fact_reduce(deps: Deps) -> Any:
                                 else None
                             ),
                         }
-                        for c in s.claims
+                        for i, c in enumerate(s.claims)
                     ],
                     "translation_problems": s.translation_problems,
                 }
@@ -82,10 +84,12 @@ def make_fact_reduce(deps: Deps) -> Any:
             ],
         }
         n = sum(counts.values())
+        flagged = len(report.flagged())
+        card["flagged"] = flagged
         text = (
             f"Fact-check: all {n} claims are supported by your source."
             if report.ok
-            else f"Fact-check: {len(failing)} scene(s) need attention ({n - counts.get('supported', 0)} of {n} claims)."
+            else f"Fact-check: {len(failing)} scene(s) need attention ({flagged} of {n} claims)."
         )
         return {**say(text, card), "fact_report": report.model_dump(), "fact_targets": []}
 
@@ -97,7 +101,9 @@ def route_after_fact(state: GraphState) -> str:
     spec = state.get("spec") or {}
     if not report.ok:
         stuck = report.signature() == state.get("last_signature")
-        if state.get("fix_loops", 0) < 2 and not stuck:
+        # ONE automatic repair round, then the reviewer decides on what is still flagged (keep /
+        # remove / fix) instead of the agent looping for minutes on its own.
+        if state.get("fix_loops", 0) < 1 and not stuck:
             return "fix_script"
     if state.get("script_approved"):
         return "narrate"

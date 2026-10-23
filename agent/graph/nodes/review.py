@@ -11,7 +11,7 @@ from langgraph.types import interrupt
 from agent.factcheck.checker import FactReport
 from agent.graph.deps import Deps, say, status
 from agent.graph.nodes.common import spec_of
-from agent.graph.state import GraphState
+from agent.graph.state import RESET, GraphState
 from agent.script import scene_texts
 
 
@@ -48,15 +48,55 @@ def make_present_script(deps: Deps) -> Any:
     return present_script
 
 
+CLAIM_ACTIONS = {"keep_claim", "keep_flagged", "remove_claim", "remove_flagged", "fix_flagged"}
+
+
+def decide_claims(
+    deps: Deps, state: GraphState, action: str, answer: dict[str, Any], user: str
+) -> dict[str, Any]:
+    """The reviewer's decision on flagged claims — instant for keeps, one targeted rewrite for
+    removals. Every decision is audit-logged with who made it."""
+    report = FactReport.model_validate(state.get("fact_report") or {"scenes": []})
+    version = int((state.get("spec") or {}).get("version") or 0)
+    pid = state["project_id"]
+    scene_id = answer.get("scene_id")
+    index = answer.get("index")
+    one = action in ("keep_claim", "remove_claim")
+    picked = [(s, i, c) for s, i, c in report.flagged() if not one or (s.scene_id == scene_id and i == index)]
+    for s, _i, c in picked:
+        deps.projects.audit_event(pid, f"claim_{action.split('_')[0]}", version=version, user=user,
+                                  scene_id=s.scene_id, claim=c.text, verdict=c.verdict)  # fmt: skip
+    # Decisions replace the automatic loop: never fall back into it from here.
+    base: dict[str, Any] = {"fix_loops": max(1, state.get("fix_loops", 0)), "scene_reports": [RESET]}
+    if action in ("keep_claim", "keep_flagged"):
+        report.confirm(scene_id if one else None, index if one else None, user)
+        out = {**base, "fact_report": report.model_dump()}
+        if action == "keep_flagged":
+            return {**out, "script_approved": True, "route": "narrate", **status("narrating")}
+        return {**out, "route": "fact_reduce"}  # re-post the ledger, then back to this review
+    if action == "fix_flagged":
+        return {**base, "fix_loops": 0, "fix_requests": [], "route": "fix_script", **status("fact_checking")}
+    requests = [
+        {"scene_id": s.scene_id,
+         "instruction": f'Remove this claim from the scene entirely (do not reword it): "{c.text}". Keep everything else.'}
+        for s, _i, c in picked
+    ]  # fmt: skip
+    return {**base, "fix_requests": requests, "route": "fix_script", **status("fact_checking")}
+
+
 def make_review_script(deps: Deps) -> Any:
     def review_script(state: GraphState) -> dict[str, Any]:
         spec = state.get("spec") or {}
         answer = interrupt({"kind": "script", "version": spec.get("version")})
-        action = (answer or {}).get("action", "approve")
+        answer = answer or {}
+        action = answer.get("action", "approve")
+        user = str(answer.get("user", "local"))
         if action == "approve":
             return {"script_approved": True, "route": "narrate", **status("narrating")}
         if action == "regenerate":
             return {"route": "write_script", **status("scripting")}
+        if action in CLAIM_ACTIONS:
+            return decide_claims(deps, state, action, answer, user)
         return {"messages": [HumanMessage(content=str(answer.get("text", "")))], "route": "chat_edit"}
 
     return review_script

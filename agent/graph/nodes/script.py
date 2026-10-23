@@ -7,7 +7,7 @@ import time
 from typing import Any
 
 from agent.factcheck.checker import FactReport
-from agent.graph.deps import Deps, say, status
+from agent.graph.deps import Deps, emit, say, status
 from agent.graph.nodes.common import chunks_block, dump, icons_block, spec_of
 from agent.graph.state import RESET, GraphState
 from agent.llm.usage import Usage, merge_usage
@@ -98,16 +98,18 @@ def make_write_script(deps: Deps) -> Any:
         usage = Usage()
         problems: list[str] = []
         spec: VideoSpec | None = None
-        for _attempt in range(2):
+        # Up to 3 drafts. Each one is gated BEFORE any fact-check or narration: valid scenes,
+        # close to the requested length, every text fits its box. Problems go back with targets.
+        for attempt in range(3):
             p = (
                 prompt
                 if not problems
-                else prompt + "\n\nYour previous draft was invalid:\n- " + "\n- ".join(problems)
+                else prompt + "\n\nFix these problems in your previous draft:\n- " + "\n- ".join(problems)
             )
             r = deps.router.structured("write_script", p, ScriptDraft)
             usage = merge_usage(usage, r.usage)
             try:
-                spec = draft_to_spec(
+                candidate = draft_to_spec(
                     r.value,
                     lang=lang,
                     source_lang=lang,
@@ -116,9 +118,21 @@ def make_write_script(deps: Deps) -> Any:
                     sources=sources,
                     version=_next_version(deps, pid),
                 )
-                break
             except DraftError as e:
                 problems = e.problems
+                continue
+            spec = candidate
+            problems = draft_gate(deps, candidate, req["target_sec"])
+            if not problems:
+                break
+            if attempt < 2:
+                emit(
+                    {
+                        "type": "status",
+                        "status": "scripting",
+                        "detail": f"tightening the draft ({len(problems)} issue(s))",
+                    }
+                )
         if spec is None:
             return {**say("I could not produce a valid script: " + "; ".join(problems)), **status("error"),
                     "usage": usage.model_dump(), "route": "end"}  # fmt: skip
@@ -141,18 +155,51 @@ def make_write_script(deps: Deps) -> Any:
     return write_script
 
 
-def rewrite_scenes(deps: Deps, spec: VideoSpec, fix: ScriptFix) -> tuple[VideoSpec, list[str]]:
-    """Applies LLM rewrites (by scene id, or 'new*' appended after `after`) deterministically."""
+TEXT_CODES = ("text_", "caption_", "unknown_icon")
+
+
+def text_issues(deps: Deps, spec: VideoSpec) -> list[dict[str, Any]]:
+    """Text-fit / icon problems only (durations are judged after narration measures them)."""
+    issues = deps.renderer.check(
+        spec, {"minTotalS": 0, "maxTotalS": 100000, "minSceneS": 0, "maxSceneS": 1000}
+    )
+    return [i for i in issues if str(i.get("code", "")).startswith(TEXT_CODES)]
+
+
+def draft_gate(deps: Deps, spec: VideoSpec, target_sec: float) -> list[str]:
+    """Cheap, deterministic checks of a fresh draft, phrased as instructions for the model."""
+    problems: list[str] = []
+    est = spec.total_s
+    if est > target_sec * 1.2 + 5:
+        cut = int((est - target_sec) * pace(spec.lang))
+        problems.append(
+            f"The script runs about {est:.0f} s but the requested length is {target_sec:.0f} s: cut about "
+            f"{cut} characters of narration across the scenes, or drop a minor scene "
+            "(keep every number, dose and prohibition)."
+        )
+    for issue in text_issues(deps, spec):
+        problems.append(f"[{issue.get('scene_id')}] {layout_hint(issue)}")
+    return problems
+
+
+def rewrite_scenes(deps: Deps, spec: VideoSpec, fix: ScriptFix) -> tuple[VideoSpec, list[str], list[str]]:
+    """Applies LLM rewrites by scene id. A rewrite that still cannot become a valid scene is skipped
+    (the original scene stays) instead of discarding the whole fix. Returns (spec, changed, skipped)."""
     scenes: list[Scene] = list(spec.scenes)
     changed: list[str] = []
+    skipped: list[str] = []
     for rw in fix.rewrites:
-        converted = draft_scenes([rw.scene], spec.lang)[0]
         idx = next((i for i, s in enumerate(scenes) if s.id == rw.scene_id), None)
         if idx is None:
             continue
+        try:
+            converted = draft_scenes([rw.scene], spec.lang)[0]
+        except DraftError:
+            skipped.append(rw.scene_id)
+            continue
         scenes[idx] = converted.model_copy(update={"id": rw.scene_id, "audio": None})
         changed.append(rw.scene_id)
-    return renumber(spec.model_copy(update={"scenes": scenes})), changed
+    return renumber(spec.model_copy(update={"scenes": scenes})), changed, skipped
 
 
 def layout_hint(issue: dict[str, Any]) -> str:
@@ -173,12 +220,23 @@ def make_fix_script(deps: Deps) -> Any:
     def fix_script(state: GraphState) -> dict[str, Any]:
         spec = spec_of(state)
         report = FactReport.model_validate(state.get("fact_report") or {"scenes": []})
-        problems: dict[str, list[str]] = {s.scene_id: s.problems() for s in report.failing()}
+        requests = state.get("fix_requests") or []
+        problems: dict[str, list[str]] = {}
+        if requests:
+            # The user decided what to change (e.g. "remove this claim"): only those scenes.
+            for req in requests:
+                problems.setdefault(str(req["scene_id"]), []).append(str(req["instruction"]))
+        else:
+            problems = {s.scene_id: s.problems() for s in report.failing()}
         for issue in state.get("layout_issues", []):
             sid = issue.get("scene_id", "-")
             targets = [s.id for s in spec.scenes] if sid == "-" else [sid]
             for t in targets:
                 problems.setdefault(t, []).append(layout_hint(issue))
+        # Text-fit / translation repairs have their own budget; fact repairs use fix_loops.
+        text_or_translation = bool(state.get("layout_issues")) or any(
+            s.translation_problems for s in report.scenes
+        )
         text = "\n".join(f"[{sid}]\n- " + "\n- ".join(p) for sid, p in problems.items())
         r = deps.router.structured(
             "fix_script",
@@ -191,20 +249,20 @@ def make_fix_script(deps: Deps) -> Any:
             ),
             ScriptFix,
         )
-        try:
-            new_spec, changed = rewrite_scenes(deps, spec, r.value)
-        except DraftError as e:
-            return {**say("The automatic fix produced an invalid scene: " + "; ".join(e.problems)),
-                    "fix_loops": state.get("fix_loops", 0) + 1, "usage": r.usage.model_dump()}  # fmt: skip
+        new_spec, changed, skipped = rewrite_scenes(deps, spec, r.value)
         deps.projects.save_spec(state["project_id"], new_spec)
-        card = {"kind": "fix", "scenes": changed, "note": r.value.note}
+        note = r.value.note + (f" (Kept the original of {', '.join(skipped)}.)" if skipped else "")
+        card = {"kind": "fix", "scenes": changed, "note": note}
         return {
-            **say(r.value.note, card),
+            **say(note, card),
             "spec": dump(new_spec),
-            "fact_targets": changed,
-            "fix_loops": state.get("fix_loops", 0) + 1,
+            # Only rewritten scenes are re-checked; with no change there is nothing to re-check.
+            "fact_targets": changed or ["-"],
+            "fix_loops": state.get("fix_loops", 0) + (0 if text_or_translation else 1),
+            "layout_loops": state.get("layout_loops", 0) + (1 if text_or_translation else 0),
             "last_signature": report.signature(),
             "layout_issues": [],
+            "fix_requests": [],
             "usage": r.usage.model_dump(),
         }
 

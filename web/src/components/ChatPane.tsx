@@ -1,14 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type DragEvent } from 'react';
+import { statusLabel, WORKING } from '../labels';
 import type { Message } from '../reducer';
 import { CardView } from './Cards';
 
-export type QuickReply = { label: string; action: 'approve' | 'regenerate' | 'edit'; text?: string };
+export type QuickReply = {
+  label: string;
+  action: 'approve' | 'regenerate' | 'edit' | 'retry';
+  text?: string;
+};
 
 export const quickReplies = (
   pending: { kind: 'script' | 'video' } | null,
   lang: string | null,
+  canRetry = false,
 ): QuickReply[] => {
-  if (!pending) return [];
+  if (!pending) return canRetry ? [{ label: 'Retry', action: 'retry' }] : [];
   const other = lang === 'ka' ? 'English' : 'Georgian';
   if (pending.kind === 'script') {
     return [
@@ -26,102 +32,151 @@ export const quickReplies = (
   ];
 };
 
+/** Cards that already say what the agent's sentence would say: show only the card. */
+const SELF_EXPLAINING = new Set(['fact_check', 'translation', 'done', 'validation']);
+
+const ACCEPT = '.pdf,.docx,.txt,.md';
+
 type Props = {
   messages: Message[];
   busy: boolean;
   status: string;
   error: string | null;
   replies: QuickReply[];
-  projects: { id: string; title: string }[];
   projectId: string | null;
   onSend: (text: string) => void;
   onReply: (r: QuickReply) => void;
   onUpload: (f: File) => void;
-  onSelectProject: (id: string) => void;
-  onNewProject: () => void;
 };
 
 export const ChatPane = (p: Props) => {
   const [text, setText] = useState('');
+  const [dragging, setDragging] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: 'end' });
-  }, [p.messages]);
+  }, [p.messages, p.replies.length]);
 
+  const canUpload = !p.busy && Boolean(p.projectId);
   const send = () => {
     const t = text.trim();
     if (!t || p.busy) return;
     p.onSend(t);
     setText('');
   };
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f && canUpload) p.onUpload(f);
+  };
+  const working = p.busy || WORKING.has(p.status);
 
   return (
-    <section className="pane chat" aria-label="Chat">
-      <header className="chat-head">
-        <strong>InstructVid</strong>
-        <select
-          aria-label="Project"
-          value={p.projectId ?? ''}
-          onChange={(e) => p.onSelectProject(e.target.value)}
-        >
-          {p.projects.map((x) => (
-            <option key={x.id} value={x.id}>
-              {x.title}
-            </option>
-          ))}
-        </select>
-        <button type="button" onClick={p.onNewProject}>
-          New
-        </button>
-        <span className={`status s-${p.status}`}>{p.busy ? 'working…' : p.status.replace(/_/g, ' ')}</span>
-      </header>
-
-      <div className="messages">
+    <section
+      className={`pane chat ${dragging ? 'is-dragging' : ''}`}
+      aria-label="Chat"
+      onDragOver={(e) => {
+        e.preventDefault();
+        if (canUpload) setDragging(true);
+      }}
+      onDragLeave={(e) => {
+        if (e.currentTarget === e.target) setDragging(false);
+      }}
+      onDrop={onDrop}
+    >
+      <div className="messages" aria-live="polite">
         {p.messages.length === 0 ? (
-          <div className="muted empty">
-            Upload a source document (PDF, DOCX, TXT or MD), then describe the video — e.g. “a 45-second
-            Georgian training video with one quiz”.
+          <div className="welcome">
+            <h2>Start from the document your team already trusts.</h2>
+            <p>
+              Upload a procedure, safety instruction or discharge sheet. Then describe the video you need, for
+              example “a 45-second Georgian training video with one quiz”. Every sentence in the video is
+              checked against your document before you see it.
+            </p>
+            <button
+              type="button"
+              className="drop"
+              disabled={!canUpload}
+              onClick={() => fileRef.current?.click()}
+            >
+              <span className="doc-glyph" aria-hidden="true" />
+              <span>
+                <strong>Choose a document</strong> or drop it here
+                <small>PDF, Word, plain text or Markdown</small>
+              </span>
+            </button>
           </div>
         ) : null}
         {p.messages.map((m) => (
-          <div key={m.id} className={`msg ${m.role}`}>
-            {m.text ? <div className="bubble">{m.text}</div> : null}
+          <article key={m.id} className={`msg from-${m.role}`}>
+            {m.text && !SELF_EXPLAINING.has(String(m.card?.kind)) ? (
+              <p className="msg-text">{m.text}</p>
+            ) : null}
             {m.card ? <CardView card={m.card} /> : null}
-          </div>
+          </article>
         ))}
         {p.error ? (
-          <div className="msg system">
-            <div className="bubble err">{p.error}</div>
-          </div>
+          <p className="alert" role="alert">
+            {p.error}
+          </p>
+        ) : null}
+        {working ? (
+          <p className="working" role="status">
+            <span className="pulse" aria-hidden="true" />
+            {statusLabel(p.status)}
+          </p>
         ) : null}
         <div ref={endRef} />
       </div>
 
       {p.replies.length ? (
         <div className="replies" role="group" aria-label="Quick replies">
-          {p.replies.map((r) => (
-            <button key={r.label} type="button" disabled={p.busy} onClick={() => p.onReply(r)}>
+          {p.replies.map((r, i) => (
+            <button
+              key={r.label}
+              type="button"
+              className={i === 0 ? 'btn primary' : 'btn'}
+              disabled={p.busy}
+              onClick={() => p.onReply(r)}
+            >
               {r.label}
             </button>
           ))}
         </div>
       ) : null}
 
-      <div className="composer">
+      <form
+        className="composer"
+        onSubmit={(e) => {
+          e.preventDefault();
+          send();
+        }}
+      >
         <button
           type="button"
-          title="Upload source"
+          className="btn icon"
+          title="Upload a source document"
           aria-label="Upload source"
-          disabled={p.busy || !p.projectId}
+          disabled={!canUpload}
           onClick={() => fileRef.current?.click()}
         >
-          📎
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M12 18v-6M9 15l3-3 3 3"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
         <input
           ref={fileRef}
           type="file"
-          accept=".pdf,.docx,.txt,.md"
+          accept={ACCEPT}
           hidden
           data-testid="file-input"
           onChange={(e) => {
@@ -133,7 +188,8 @@ export const ChatPane = (p: Props) => {
         <textarea
           aria-label="Message"
           value={text}
-          placeholder="Describe the video or ask for a change…"
+          rows={2}
+          placeholder="Describe the video, or ask for a change"
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -142,10 +198,10 @@ export const ChatPane = (p: Props) => {
             }
           }}
         />
-        <button type="button" className="primary" disabled={p.busy || !text.trim()} onClick={send}>
+        <button type="submit" className="btn primary" disabled={p.busy || !text.trim()}>
           Send
         </button>
-      </div>
+      </form>
     </section>
   );
 };

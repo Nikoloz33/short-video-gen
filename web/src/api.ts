@@ -68,10 +68,26 @@ export type Snapshot = {
   status: string;
   messages: { role: 'user' | 'agent'; text: string; card?: Card | null }[];
   pending: { kind: 'script' | 'video'; version?: number } | null;
-  spec: { version: number; title: string; lang: string; total_s: number } | null;
+  can_retry?: boolean;
+  spec: SpecOutline | null;
   versions: VersionInfo[];
   sources: { doc_id: string; title: string; lang: string; redactions: { kind: string; preview: string }[] }[];
   cost_usd: number;
+};
+
+export type SceneOutline = {
+  id: string;
+  template: string;
+  texts: string[];
+  narration: string;
+  duration_s?: number;
+};
+export type SpecOutline = {
+  version: number;
+  title: string;
+  lang: string;
+  total_s: number;
+  scenes: SceneOutline[];
 };
 
 export type Card = { kind: string; [k: string]: unknown };

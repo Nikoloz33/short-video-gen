@@ -1,5 +1,5 @@
 /** All UI state comes from server events through this reducer (no state library). */
-import type { Card, ServerEvent, Snapshot, VersionInfo } from './api';
+import type { Card, ServerEvent, Snapshot, SpecOutline, VersionInfo } from './api';
 
 export type Message = { id: number; role: 'user' | 'agent' | 'system'; text: string; card?: Card | null };
 
@@ -38,6 +38,8 @@ export type State = {
   preset: 'preview' | 'final';
   error: string | null;
   costUsd: number;
+  canRetry: boolean;
+  spec: SpecOutline | null;
   nextId: number;
 };
 
@@ -53,6 +55,8 @@ export const initialState: State = {
   preset: 'preview',
   error: null,
   costUsd: 0,
+  canRetry: false,
+  spec: null,
   nextId: 1,
 };
 
@@ -64,7 +68,7 @@ export type Action =
   | { type: 'server'; event: ServerEvent }
   | { type: 'select_version'; version: number }
   | { type: 'select_preset'; preset: 'preview' | 'final' }
-  | { type: 'versions'; versions: VersionInfo[] }
+  | { type: 'versions'; versions: VersionInfo[]; spec?: SpecOutline | null }
   | { type: 'error'; message: string };
 
 const num = (v: unknown, d = 0): number => (typeof v === 'number' && Number.isFinite(v) ? v : d);
@@ -186,6 +190,7 @@ const onServer = (s: State, e: ServerEvent): State => {
         ...s,
         status: String(e.status ?? s.status),
         costUsd: num(e.total_cost_usd, s.costUsd),
+        canRetry: Boolean(e.can_retry),
         pending: String(e.status).startsWith('awaiting') ? s.pending : null,
       };
     default:
@@ -217,6 +222,8 @@ export const reducer = (s: State, a: Action): State => {
         selectedVersion: sel,
         preset: v?.final ? 'final' : 'preview',
         costUsd: snap.cost_usd,
+        canRetry: Boolean(snap.can_retry),
+        spec: snap.spec,
       };
     }
     case 'user_message':
@@ -226,6 +233,7 @@ export const reducer = (s: State, a: Action): State => {
         nextId: s.nextId + 1,
         pending: null,
         error: null,
+        canRetry: false,
       };
     case 'system_message':
       return {
@@ -243,7 +251,12 @@ export const reducer = (s: State, a: Action): State => {
       return { ...s, preset: a.preset };
     case 'versions': {
       const sel = latest(a.versions);
-      return { ...s, versions: a.versions, selectedVersion: sel ?? s.selectedVersion };
+      return {
+        ...s,
+        versions: a.versions,
+        selectedVersion: sel ?? s.selectedVersion,
+        spec: a.spec === undefined ? s.spec : a.spec,
+      };
     }
     case 'error':
       return { ...s, error: a.message, busy: false };

@@ -171,6 +171,7 @@ describe('reducer', () => {
 describe('quick replies', () => {
   it('match the pending checkpoint and offer the other language', () => {
     expect(quickReplies(null, 'ka')).toEqual([]);
+    expect(quickReplies(null, 'ka', true)).toEqual([{ label: 'Retry', action: 'retry' }]);
     const script = quickReplies({ kind: 'script' }, 'ka');
     expect(script[0]).toEqual({ label: 'Approve script', action: 'approve' });
     expect(script.map((r) => r.label)).toContain('Switch to English');

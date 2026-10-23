@@ -1,5 +1,8 @@
-/** Inline chat cards: plan, script, fact-check, translation, edits, redactions, results. */
+/** Inline chat cards. Each kind has its own shape: a ledger for facts, a sequence for the plan,
+ * a storyboard for the script — not one generic box. */
 import type { Card } from '../api';
+import { GATE, TEMPLATE, VERDICT } from '../labels';
+import { Mark, markOf } from './Mark';
 
 type Claim = {
   text: string;
@@ -12,217 +15,297 @@ type Claim = {
 };
 type FactScene = { scene_id: string; ok: boolean; claims: Claim[]; translation_problems: string[] };
 
-const Verdict = ({ v }: { v: string }) => <span className={`verdict v-${v}`}>{v.replace('_', ' ')}</span>;
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-const FactCheck = ({ card }: { card: Card }) => {
+const ClaimRow = ({ c }: { c: Claim }) => (
+  <li className="claim">
+    <Mark kind={markOf(c.verdict)} />
+    <div>
+      <p className="claim-text">{c.text}</p>
+      {c.verdict !== 'supported' ? (
+        <p className="claim-why">
+          {VERDICT[c.verdict] ?? c.verdict}
+          {c.gate ? ` (${GATE[c.gate] ?? c.gate})` : ''}: {c.why}
+        </p>
+      ) : null}
+      {c.quote || c.source ? (
+        <blockquote className="source-quote" title={c.chunk_id ? `Source passage ${c.chunk_id}` : undefined}>
+          {c.quote || c.source}
+        </blockquote>
+      ) : null}
+    </div>
+  </li>
+);
+
+const FactLedger = ({ card }: { card: Card }) => {
   const scenes = (card.scenes as FactScene[]) ?? [];
   const counts = (card.counts as Record<string, number>) ?? {};
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const ok = counts.supported ?? 0;
   const failing = scenes.filter((s) => !s.ok);
   return (
-    <div className={`card ${card.ok ? 'ok' : 'bad'}`}>
-      <div className="card-title">
-        Fact-check {card.ok ? '✓' : '⚠'}{' '}
-        <span className="muted">
-          {Object.entries(counts)
-            .map(([k, n]) => `${n} ${k.replace('_', ' ')}`)
-            .join(' · ')}
-        </span>
+    <section className={`card ledger ${card.ok ? 'is-ok' : 'is-bad'}`} aria-label="Fact-check">
+      <header className="card-head">
+        <Mark kind={card.ok ? 'ok' : 'bad'} size={18} />
+        <h3>
+          {card.ok
+            ? `All ${total} claims are in your document`
+            : `${total - ok} of ${total} claims need a look`}
+        </h3>
+      </header>
+      <div className="tally" aria-hidden="true">
+        {(['supported', 'partially_supported', 'unsupported', 'contradicts'] as const).map((k) =>
+          counts[k] ? (
+            <span key={k} className={`tally-${markOf(k)}`} style={{ flexGrow: counts[k] }} />
+          ) : null,
+        )}
       </div>
-      {failing.length === 0 ? (
-        <div className="muted">Every claim is supported by the source.</div>
-      ) : (
-        failing.map((s) => (
-          <div key={s.scene_id} className="fact-scene">
-            <div className="scene-id">Scene {s.scene_id}</div>
+      {failing.map((s) => (
+        <div key={s.scene_id} className="ledger-scene">
+          <h4>Scene {s.scene_id.replace(/^s/, '')}</h4>
+          <ul>
             {s.claims
               .filter((c) => c.verdict !== 'supported')
               .map((c, i) => (
-                <div key={i} className="claim">
-                  <div>
-                    <Verdict v={c.verdict} /> {c.text}
-                  </div>
-                  <div className="why">
-                    Why: {c.why}
-                    {c.gate ? ` (${c.gate} check)` : ''}
-                  </div>
-                  {c.quote || c.source ? (
-                    <blockquote title={c.chunk_id ?? ''}>{c.quote || c.source}</blockquote>
-                  ) : null}
-                </div>
+                <ClaimRow key={i} c={c} />
               ))}
             {s.translation_problems.map((p, i) => (
-              <div key={`t${i}`} className="claim">
-                <Verdict v="translation" /> {p}
-              </div>
+              <li key={`t${i}`} className="claim">
+                <Mark kind="partial" />
+                <p className="claim-text">Translation: {p}</p>
+              </li>
             ))}
-          </div>
-        ))
-      )}
-      <details>
-        <summary>All scenes</summary>
+          </ul>
+        </div>
+      ))}
+      <details className="more">
+        <summary>Show all {plural(total, 'claim')} with their sources</summary>
         {scenes.map((s) => (
-          <div key={s.scene_id} className="fact-scene">
-            <div className="scene-id">
-              {s.scene_id} {s.ok ? '✓' : '⚠'}
-            </div>
-            {s.claims.map((c, i) => (
-              <div key={i} className="claim small">
-                <Verdict v={c.verdict} /> {c.text}
-                {c.quote ? <blockquote>{c.quote}</blockquote> : null}
-              </div>
-            ))}
+          <div key={s.scene_id} className="ledger-scene">
+            <h4>Scene {s.scene_id.replace(/^s/, '')}</h4>
+            <ul>
+              {s.claims.map((c, i) => (
+                <ClaimRow key={i} c={c} />
+              ))}
+            </ul>
           </div>
         ))}
       </details>
-    </div>
+    </section>
   );
 };
 
-type ScriptScene = { id: string; template: string; texts: string[]; narration: string; icon?: string | null };
+type ScriptScene = { id: string; template: string; texts: string[]; narration: string };
 
-const Script = ({ card }: { card: Card }) => (
-  <div className="card">
-    <div className="card-title">
-      Script v{String(card.version)} · {String(card.lang).toUpperCase()} · ~{String(card.estimated_s)} s
-    </div>
-    <ol className="script">
-      {((card.scenes as ScriptScene[]) ?? []).map((s) => (
-        <li key={s.id}>
-          <span className="tpl">{s.template.replace('_', ' ')}</span> {s.texts.join(' · ').replace(/\*/g, '')}
-          <div className="narration">🔊 {s.narration}</div>
-        </li>
-      ))}
-    </ol>
-  </div>
-);
+const Storyboard = ({ card }: { card: Card }) => {
+  const scenes = (card.scenes as ScriptScene[]) ?? [];
+  return (
+    <section className="card storyboard" aria-label="Script">
+      <header className="card-head">
+        <h3>
+          Script, version {String(card.version)}
+          <span className="sub">
+            {String(card.lang) === 'ka' ? 'Georgian' : 'English'}, about {String(card.estimated_s)} seconds,{' '}
+            {plural(scenes.length, 'scene')}
+          </span>
+        </h3>
+      </header>
+      <p className="aside">
+        Each scene appears in the scene list with its fact-check mark. Read the narration before you approve.
+      </p>
+      <details className="more">
+        <summary>Show the full script</summary>
+        <ol>
+          {scenes.map((s) => (
+            <li key={s.id}>
+              <span className="tpl">{TEMPLATE[s.template] ?? s.template}</span>
+              <p className="onscreen">{s.texts.join(' / ').replace(/\*/g, '')}</p>
+              <p className="voice">“{s.narration}”</p>
+            </li>
+          ))}
+        </ol>
+      </details>
+    </section>
+  );
+};
 
 const Plan = ({ card }: { card: Card }) => (
-  <div className="card">
-    <div className="card-title">
-      Plan · {String(card.target_sec)} s · {String(card.language).toUpperCase()}
-    </div>
-    <div>{String(card.goal)}</div>
-    <ol>
+  <section className="card plan" aria-label="Plan">
+    <header className="card-head">
+      <h3>
+        Plan
+        <span className="sub">
+          {String(card.target_sec)} seconds in {String(card.language) === 'ka' ? 'Georgian' : 'English'}
+        </span>
+      </h3>
+    </header>
+    <p className="goal">{String(card.goal)}</p>
+    <ol className="steps">
       {((card.steps as string[]) ?? []).map((s, i) => (
         <li key={i}>{s}</li>
       ))}
     </ol>
     {((card.quiz_topics as string[]) ?? []).length ? (
-      <div className="muted">Quiz: {(card.quiz_topics as string[]).join('; ')}</div>
+      <p className="aside">Quiz: {(card.quiz_topics as string[]).join('; ')}</p>
     ) : null}
-  </div>
+  </section>
 );
 
-const Redactions = ({ card }: { card: Card }) => {
+const Upload = ({ card }: { card: Card }) => {
   const r = (card.redactions as { kind: string; preview: string }[]) ?? [];
   const removed = (card.removed_lines as string[]) ?? [];
   return (
-    <div className="card">
-      <div className="card-title">
-        Source uploaded: {String(card.title)} ({String(card.lang).toUpperCase()})
-      </div>
+    <section className="card upload" aria-label="Uploaded document">
+      <header className="card-head">
+        <span className="doc-glyph" aria-hidden="true" />
+        <h3>
+          Source uploaded: {String(card.title)}
+          <span className="sub">
+            {String(card.lang) === 'ka' ? 'Georgian' : 'English'}, {Number(card.chars ?? 0).toLocaleString()}{' '}
+            characters
+          </span>
+        </h3>
+      </header>
       {r.length ? (
-        <div>
-          Redacted before anything left this machine:{' '}
-          {r.map((x, i) => (
-            <span key={i} className="chip">
-              {x.kind}: {x.preview}
-            </span>
-          ))}
-        </div>
+        <>
+          <p>Removed before anything left this computer:</p>
+          <ul className="redactions">
+            {r.map((x, i) => (
+              <li key={i}>
+                <span className="kind">{x.kind}</span> <code>{x.preview}</code>
+              </li>
+            ))}
+          </ul>
+        </>
       ) : (
-        <div className="muted">No personal data found.</div>
+        <p className="aside">No personal data found.</p>
       )}
       {removed.length ? (
-        <div className="muted">Ignored {removed.length} line(s) that looked like instructions.</div>
+        <p className="aside">
+          Ignored {plural(removed.length, 'line')} that tried to give the AI instructions.
+        </p>
       ) : null}
-    </div>
+    </section>
   );
 };
 
-const Done = ({ card }: { card: Card }) => (
-  <div className="card ok">
-    <div className="card-title">Final video v{String(card.version)} ready</div>
-    <div className="muted">Model cost ${Number(card.cost_usd ?? 0).toFixed(3)}</div>
-  </div>
-);
+const opText = (o: Record<string, unknown>): string => {
+  const scene = o.scene_id ? `scene ${String(o.scene_id).replace(/^s(\d+)$/, '$1')}` : 'the video';
+  switch (o.op) {
+    case 'set_text':
+      return `Rewrote the ${String(o.field)} of ${scene}`;
+    case 'set_icon':
+      return `Changed the icon of ${scene} to “${String(o.icon)}”`;
+    case 'reorder':
+      return 'Reordered the scenes';
+    case 'delete_scene':
+      return `Removed ${scene}`;
+    case 'add_scene':
+      return `Added a ${TEMPLATE[String(o.template)]?.toLowerCase() ?? 'new'} scene`;
+    case 'add_quiz':
+      return 'Added a quiz question';
+    case 'set_language':
+      return `Switched the video to ${o.language === 'ka' ? 'Georgian' : 'English'}`;
+    case 'set_voice':
+      return `Changed the voice to ${String(o.voice)}`;
+    case 'set_target_duration':
+      return `Set the length to ${String(o.target_sec)} seconds`;
+    case 'regenerate_scene':
+      return `Rewrote ${scene}${o.instruction ? `: ${String(o.instruction)}` : ''}`;
+    default:
+      return String(o.op);
+  }
+};
 
-const Generic = ({ card }: { card: Card }) => {
-  const k = card.kind;
-  if (k === 'translation') {
-    const problems = (card.problems as Record<string, string[]>) ?? {};
-    const n = Object.keys(problems).length;
-    return (
-      <div className={`card ${n ? 'bad' : 'ok'}`}>
-        <div className="card-title">Translation → {String(card.to).toUpperCase()}</div>
-        {n ? (
-          Object.entries(problems).map(([sid, p]) => (
-            <div key={sid}>
-              {sid}: {p.join('; ')}
-            </div>
-          ))
-        ) : (
-          <div className="muted">Numbers, names and negations preserved.</div>
-        )}
-      </div>
-    );
+const Simple = ({ card }: { card: Card }) => {
+  switch (card.kind) {
+    case 'translation': {
+      const problems = (card.problems as Record<string, string[]>) ?? {};
+      const n = Object.keys(problems).length;
+      return (
+        <section className={`card note ${n ? 'is-warn' : ''}`}>
+          <Mark kind={n ? 'partial' : 'ok'} />
+          <p>
+            Translated to {card.to === 'ka' ? 'Georgian' : 'English'}.{' '}
+            {n
+              ? `${plural(n, 'scene')} changed a number, name or negation and will be corrected.`
+              : 'Numbers, names and negations match the original.'}
+          </p>
+        </section>
+      );
+    }
+    case 'edit':
+      return (
+        <section className="card note">
+          <ul className="ops">
+            {((card.ops as Record<string, unknown>[]) ?? []).map((o, i) => (
+              <li key={i}>{opText(o)}</li>
+            ))}
+          </ul>
+          <p className="aside">Saved as version {String(card.version)}.</p>
+        </section>
+      );
+    case 'fix':
+      return card.note ? (
+        <section className="card note">
+          <p>{String(card.note)}</p>
+        </section>
+      ) : null;
+    case 'layout':
+    case 'validation': {
+      const items =
+        ((card.issues ?? card.checks) as {
+          message?: string;
+          name?: string;
+          detail?: string;
+          ok?: boolean;
+        }[]) ?? [];
+      return (
+        <section className="card note is-bad">
+          <Mark kind="bad" />
+          <div>
+            <p>
+              {card.kind === 'layout'
+                ? 'Some text does not fit on screen:'
+                : 'The video did not pass its checks:'}
+            </p>
+            <ul>
+              {items
+                .filter((i) => i.ok !== true)
+                .map((i, n) => (
+                  <li key={n}>{i.message ?? `${i.name}: ${i.detail}`}</li>
+                ))}
+            </ul>
+          </div>
+        </section>
+      );
+    }
+    case 'done':
+      return (
+        <section className="card note is-ok">
+          <Mark kind="ok" />
+          <p>
+            Final video, version {String(card.version)}, is ready. Model cost for this video: $
+            {Number(card.cost_usd ?? 0).toFixed(2)}.
+          </p>
+        </section>
+      );
+    default:
+      return null; // source / video cards are reflected elsewhere (studio pane)
   }
-  if (k === 'edit') {
-    return (
-      <div className="card">
-        <div className="card-title">Edit → v{String(card.version)}</div>
-        {((card.ops as Record<string, unknown>[]) ?? []).map((o, i) => (
-          <code key={i} className="op">
-            {Object.entries(o)
-              .map(([a, b]) => `${a}=${String(b)}`)
-              .join(' ')}
-          </code>
-        ))}
-      </div>
-    );
-  }
-  if (k === 'layout' || k === 'validation') {
-    const items =
-      ((card.issues ?? card.checks) as {
-        message?: string;
-        name?: string;
-        detail?: string;
-        ok?: boolean;
-      }[]) ?? [];
-    return (
-      <div className="card bad">
-        <div className="card-title">{k === 'layout' ? 'Layout check' : 'Video validation'}</div>
-        {items
-          .filter((i) => i.ok !== true)
-          .map((i, n) => (
-            <div key={n}>{i.message ?? `${i.name}: ${i.detail}`}</div>
-          ))}
-      </div>
-    );
-  }
-  if (k === 'video') return null;
-  if (k === 'source' || k === 'fix')
-    return (
-      <div className="card muted">
-        {String(card.note ?? `${String(card.new_chunks ?? '')} passages indexed`)}
-      </div>
-    );
-  return null;
 };
 
 export const CardView = ({ card }: { card: Card }) => {
   switch (card.kind) {
     case 'fact_check':
-      return <FactCheck card={card} />;
+      return <FactLedger card={card} />;
     case 'script':
-      return <Script card={card} />;
+      return <Storyboard card={card} />;
     case 'plan':
       return <Plan card={card} />;
     case 'upload':
-      return <Redactions card={card} />;
-    case 'done':
-      return <Done card={card} />;
+      return <Upload card={card} />;
     default:
-      return <Generic card={card} />;
+      return <Simple card={card} />;
   }
 };

@@ -98,9 +98,9 @@ class StreamResult:
 
 @dataclass
 class RetryPolicy:
-    attempts: int = 5
+    attempts: int = 6
     base_s: float = 2.0
-    cap_s: float = 40.0
+    cap_s: float = 60.0
 
 
 class LLMRouter:
@@ -222,7 +222,9 @@ class LLMRouter:
             # Rate-limited model: run the same request on the fallback role's model.
             fcfg = self.models.role(fb)
             log.warning("falling back", role=role, to=fb, model=fcfg.model)
-            req = replace(req, model=fcfg.model, thinking_level=fcfg.thinking_level, temperature=None)
+            req = replace(
+                req, model=fcfg.model, thinking_level=fcfg.thinking_level, temperature=fcfg.temperature
+            )
             resp = self._with_retry(fb, lambda: self.backend.generate(req))
             return resp, self._account(fb, req.model, resp.usage)
         log.info("llm call", role=role, model=req.model, ms=round((time.perf_counter() - t0) * 1000))

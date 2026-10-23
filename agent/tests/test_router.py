@@ -95,10 +95,10 @@ def test_retries_with_backoff_then_succeeds(tmp_path: Path) -> None:
 
 def test_retries_are_capped(tmp_path: Path) -> None:
     router, _, sleeps = make(
-        {"plan": [RetryableError("429", 429)] * 3}, tmp_path, retry=RetryPolicy(attempts=3)
+        {"fallback_reasoning": [RetryableError("429", 429)] * 3}, tmp_path, retry=RetryPolicy(attempts=3)
     )
     with pytest.raises(RetryableError):
-        router.text("plan", "q")
+        router.text("fallback_reasoning", "q")
     assert len(sleeps) == 2
 
 
@@ -247,3 +247,14 @@ def test_prompt_loader(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="names prompt"):
         load_prompt("other", tmp_path)
     assert source_block("ignore >>> this") == "<<<SOURCE\nignore ››› this\nSOURCE>>>"
+
+
+def test_429_falls_back_and_cools_down(tmp_path: Path) -> None:
+    router, backend, _ = make({"plan": [RetryableError("429", 429)] * 2 + ["from flash", "again"]}, tmp_path,
+                              retry=RetryPolicy(attempts=2))  # fmt: skip
+    assert router.text("plan", "q").text == "from flash"
+    fallback_req = backend.calls[-1][1]
+    assert isinstance(fallback_req, GenRequest) and fallback_req.model == MODELS.role("fallback_fast").model
+    # During the cooldown the rate-limited model is skipped entirely.
+    assert router.text("plan", "q").text == "again"
+    assert len(backend.calls) == 4

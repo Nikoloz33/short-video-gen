@@ -231,3 +231,31 @@ def test_reducers() -> None:
     u = usage_reducer({"roles": [{"role": "plan", "model": "m", "calls": 1, "cost_usd": 0.1}]},
                       {"roles": [{"role": "plan", "model": "m", "calls": 2, "cost_usd": 0.2}]})  # fmt: skip
     assert u["roles"][0]["calls"] == 3
+
+
+def test_retry_continues_from_the_checkpoint(settings: Settings) -> None:
+    from agent.llm.types import RetryableError
+
+    responses = scenario_responses()
+    script = responses["write_script"]
+    calls = {"n": 0}
+
+    def flaky(req: Any) -> Any:
+        calls["n"] += 1
+        if calls["n"] <= 6:  # every retry attempt of the first run fails
+            raise RetryableError("quota", 503)
+        return script(req)
+
+    responses["write_script"] = flaky
+    r = make_runner(settings, responses)
+    r.deps.router._sleep = lambda _s: None
+    pid = new_project(r)
+    evs = events(r.run(pid, message="A 45-second English video"))
+    assert any(e["type"] == "error" for e in evs) and evs[-1]["can_retry"] is True
+    assert r.can_retry(pid)
+    evs = events(r.run(pid, retry=True))
+    ns = nodes(evs)
+    assert ns[0] == "write_script" and "intake" not in ns and "plan" not in ns
+    assert r.pending_interrupt(pid) == {"kind": "script", "version": 1}
+    assert not r.can_retry(pid)
+    r.close()

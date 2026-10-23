@@ -31,6 +31,7 @@ from agent.tts.wav import to_wav, wav_duration
 
 TTS_PROMPT_VERSION = 1
 MIN_SIMILARITY = 0.85
+SYNTH_ATTEMPTS = 3
 LANG_NAME = {"ka": "Georgian", "en": "English"}
 
 
@@ -109,7 +110,7 @@ class Narrator:
         code = load_app().languages[lang].tts_code
         usage = Usage()
         last_problem = ""
-        for _attempt in range(2):
+        for _attempt in range(SYNTH_ATTEMPTS):
             r = self.router.tts(text, code, voice)
             usage = merge_usage(usage, r.usage)
             self._normalize(to_wav(r.data, r.mime_type), path)
@@ -117,13 +118,18 @@ class Narrator:
             if self.verify:
                 transcript, u = self._transcribe(path.read_bytes(), lang)
                 usage = merge_usage(usage, u)
+                if not transcript:
+                    # An empty transcript is a transcription hiccup (seen under rate limiting), not
+                    # proof of bad audio: ask once more before judging the clip.
+                    transcript, u = self._transcribe(path.read_bytes(), lang)
+                    usage = merge_usage(usage, u)
                 ok, sim, last_problem = transcript_matches(text, transcript)
                 if not ok:
                     continue
             meta.write_text(json.dumps({"similarity": sim, "transcript": transcript, "text": text}), "utf-8")
             return Clip(path, wav_duration(path), False, sim, transcript), usage
         path.unlink(missing_ok=True)
-        raise NarrationError(f"TTS failed the transcript check twice: {last_problem}")
+        raise NarrationError(f"TTS failed the transcript check {SYNTH_ATTEMPTS} times: {last_problem}")
 
 
 def clip_record(clip: Clip) -> dict[str, object]:

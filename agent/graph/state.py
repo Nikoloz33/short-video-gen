@@ -41,6 +41,8 @@ class GraphState(TypedDict, total=False):
     #: Scene ids to (re)check; empty = every scene.
     fact_targets: list[str]
     fix_loops: int
+    #: Layout-fix attempts (separate budget from fact-check fixes).
+    layout_loops: int
     last_signature: str
     layout_issues: list[dict[str, Any]]
     script_approved: bool

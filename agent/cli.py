@@ -86,6 +86,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("project")
     r.add_argument("action", choices=["approve", "regenerate"])
     r.add_argument("--approve", default="")
+    rt = sub.add_parser("retry", help="continue a run that stopped on an error")
+    rt.add_argument("project")
+    rt.add_argument("--approve", default="")
     s = sub.add_parser("status")
     s.add_argument("project")
     sub.add_parser("spend")
@@ -117,6 +120,8 @@ def main(argv: list[str] | None = None) -> int:
             runner.run(args.project, resume={"action": args.action, "user": "cli"}),
             approve,
         )
+    elif args.cmd == "retry":
+        _drive(runner, args.project, runner.run(args.project, retry=True), approve)
     elif args.cmd == "status":
         st = runner.state(args.project)
         sys.stdout.write(

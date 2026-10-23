@@ -33,8 +33,11 @@ def make_narrate(deps: Deps) -> Any:
             try:
                 clip, u = deps.narrator.synth(s.narration.replace("*", ""), spec.lang, spec.voice)
             except NarrationError as e:
-                return {**say(f"Narration failed for scene {s.id}: {e}"), **status("error"),
-                        "usage": usage.model_dump(), "route": "end"}  # fmt: skip
+                # Raise instead of ending the run: the checkpoint stays on this node, so Retry resumes
+                # here and every clip already made comes back from the cache.
+                raise NarrationError(
+                    f"Narration failed for scene {s.id}: {e}. Press Retry to try again."
+                ) from e
             usage = merge_usage(usage, u)
             hits += clip.cache_hit
             synthesized += not clip.cache_hit
@@ -65,9 +68,9 @@ def make_layout_check(deps: Deps) -> Any:
         if not issues:
             return {"layout_issues": [], "route": "render_preview", **status("rendering_preview")}
         card = {"kind": "layout", "issues": issues}
-        if state.get("fix_loops", 0) < 3:
+        if state.get("layout_loops", 0) < 2:
             return {**say(f"Layout check found {len(issues)} issue(s); fixing them.", card),
-                    "layout_issues": issues, "route": "fix_script"}  # fmt: skip
+                    "layout_issues": issues, "route": "fix_script", "layout_loops": state.get("layout_loops", 0) + 1}  # fmt: skip
         return {**say("The script still does not fit the video layout. Please shorten it in chat.", card),
                 "layout_issues": issues, "route": "end", **status("needs_attention")}  # fmt: skip
 

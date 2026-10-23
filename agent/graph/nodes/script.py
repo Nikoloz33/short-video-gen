@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 from typing import Any
 
@@ -129,6 +130,7 @@ def make_write_script(deps: Deps) -> Any:
             "fact_targets": [],
             "scene_reports": [RESET],
             "fix_loops": 0,
+            "layout_loops": 0,
             "last_signature": "",
             "layout_issues": [],
             "script_approved": False,
@@ -153,6 +155,20 @@ def rewrite_scenes(deps: Deps, spec: VideoSpec, fix: ScriptFix) -> tuple[VideoSp
     return renumber(spec.model_copy(update={"scenes": scenes})), changed
 
 
+def layout_hint(issue: dict[str, Any]) -> str:
+    """Layout problems with a concrete target: models shorten reliably only when given a length."""
+    msg = str(issue.get("message", ""))
+    base = f"{issue.get('field')}: {msg}"
+    m = re.search(r'\((\d+)/(\d+) lines\): "(.*)"$', msg)
+    if m:
+        lines, max_lines, text = int(m.group(1)), int(m.group(2)), m.group(3)
+        target = int(len(text) * max_lines / max(lines, 1) * 0.85)
+        base += f" -> rewrite it in at most {target} characters (keep every number and prohibition)"
+    if issue.get("code") == "total_duration":
+        base += " -> shorten the narration of every scene by about a third"
+    return base
+
+
 def make_fix_script(deps: Deps) -> Any:
     def fix_script(state: GraphState) -> dict[str, Any]:
         spec = spec_of(state)
@@ -162,7 +178,7 @@ def make_fix_script(deps: Deps) -> Any:
             sid = issue.get("scene_id", "-")
             targets = [s.id for s in spec.scenes] if sid == "-" else [sid]
             for t in targets:
-                problems.setdefault(t, []).append(f"{issue.get('field')}: {issue.get('message')}")
+                problems.setdefault(t, []).append(layout_hint(issue))
         text = "\n".join(f"[{sid}]\n- " + "\n- ".join(p) for sid, p in problems.items())
         r = deps.router.structured(
             "fix_script",

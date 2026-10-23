@@ -75,17 +75,28 @@ class Runner:
         values: dict[str, Any] = self.graph.get_state(self.config(project_id)).values
         return values
 
+    def can_retry(self, project_id: str) -> bool:
+        """A run that died on an error (e.g. a provider 429) left pending tasks in the checkpoint."""
+        snap = self.graph.get_state(self.config(project_id))
+        return bool(snap.next) and self.pending_interrupt(project_id) is None
+
     def run(
-        self, project_id: str, message: str | None = None, resume: dict[str, Any] | None = None
+        self,
+        project_id: str,
+        message: str | None = None,
+        resume: dict[str, Any] | None = None,
+        retry: bool = False,
     ) -> Iterator[dict[str, Any]]:
         """Streams events. A free-text message while a review is pending resumes it as an edit."""
         if message is not None and resume is None and self.pending_interrupt(project_id):
             resume = {"action": "edit", "text": message}
-        inp: Any = (
-            Command(resume=resume)
-            if resume is not None
-            else {"messages": [HumanMessage(content=message or "")], "project_id": project_id}
-        )
+        inp: Any
+        if retry:
+            inp = None  # continue from the last checkpoint: completed nodes are not redone
+        elif resume is not None:
+            inp = Command(resume=resume)
+        else:
+            inp = {"messages": [HumanMessage(content=message or "")], "project_id": project_id}
         with bound_thread(project_id), self.deps.router.budget(self.deps.settings.max_run_cost_usd) as budget:
             try:
                 for mode, chunk in self.graph.stream(inp, self.config(project_id), stream_mode=STREAM_MODES):
@@ -108,6 +119,7 @@ class Runner:
             yield {
                 "type": "done",
                 "status": values.get("status", "idle"),
+                "can_retry": self.can_retry(project_id),
                 "run_cost_usd": round(budget.spent_usd, 6),
                 "total_cost_usd": round(
                     sum(r.get("cost_usd", 0) for r in (values.get("usage") or {}).get("roles", [])), 6

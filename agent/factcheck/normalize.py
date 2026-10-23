@@ -155,7 +155,7 @@ def missing_quantities(claim: str, evidence: str) -> list[Quantity]:
 # ---- polarity ----------------------------------------------------------------------------------
 
 _NEG = re.compile(
-    r"\b(not|never|no|don't|do not|doesn't|cannot|can't|mustn't|must not|avoid|without|stop|prohibited|forbidden)\b"
+    r"\b(not|never|no|don't|do not|doesn't|cannot|can't|mustn't|must not|avoid|without|prohibited|forbidden)\b"
     r"|(?<![ა-ჿ])(არ|ნუ|არასოდეს|აკრძალულია|მოერიდეთ|გარეშე)(?![ა-ჿ])",
     re.IGNORECASE,
 )

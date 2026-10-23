@@ -50,11 +50,16 @@ def check_translation(source: str, translated: str, back_translated: str) -> lis
     """Problems with a translation: numbers that changed (both directions), lost names, flipped
     negation (checked on the back-translation, which is in the source language)."""
     problems: list[str] = []
-    src_q = sorted((q.value, q.unit or "") for q in quantities(source))
-    tr_q = sorted((q.value, q.unit or "") for q in quantities(translated))
+    # A bare 0/1 ("Step 1", "one quiz") is often spelled out or dropped in translation: ignore it.
+    src_q = sorted((q.value, q.unit or "") for q in quantities(source) if q.unit or q.value not in (0.0, 1.0))
+    tr_q = sorted(
+        (q.value, q.unit or "") for q in quantities(translated) if q.unit or q.value not in (0.0, 1.0)
+    )
     if [v for v, _ in src_q] != [v for v, _ in tr_q]:
         problems.append(f"numbers differ: source {src_q} vs translation {tr_q}")
-    miss = missing_names(source, translated) + missing_names(translated, source)
+    # Names of the source must survive (one direction: compounds like "handwashing" translate into
+    # separate words, so extra glossary hits in the translation are not errors).
+    miss = missing_names(source, translated)
     if miss:
         problems.append(f"names lost in translation: {', '.join(sorted(set(miss)))}")
     if is_negated(source) != is_negated(back_translated):

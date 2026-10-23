@@ -114,3 +114,10 @@ def test_cli_fake_create_and_spend(
     assert cli_main(["--fake", "status", pid]) == 0
     assert '"done"' in capsys.readouterr().out
     assert cli_main(["spend"]) == 0
+
+
+def test_retry_endpoint_rejects_when_nothing_failed(client: tuple[TestClient, Runner]) -> None:
+    c, _ = client
+    pid = c.post("/api/projects", json={}, headers=H).json()["id"]
+    assert c.post(f"/api/projects/{pid}/retry", headers=H).status_code == 409
+    assert c.get(f"/api/projects/{pid}", headers=H).json()["can_retry"] is False

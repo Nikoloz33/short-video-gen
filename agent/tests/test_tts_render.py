@@ -67,9 +67,15 @@ def test_narrator_retries_then_fails(router: LLMRouter, tmp_path: Path) -> None:
     n = _narrator(router, tmp_path, ["something else entirely", "Wash."])
     clip, _ = n.synth("Wash.", "en", "Kore")
     assert not clip.cache_hit  # second attempt passed
-    n2 = _narrator(router, tmp_path / "b", ["nope", "still nope"])
-    with pytest.raises(NarrationError, match="twice"):
+    n2 = _narrator(router, tmp_path / "b", ["nope", "still nope", "nope again"])
+    with pytest.raises(NarrationError, match="3 times"):
         n2.synth("Rinse under running water.", "en", "Kore")
+
+
+def test_empty_transcript_is_retranscribed(router: LLMRouter, tmp_path: Path) -> None:
+    n = _narrator(router, tmp_path, ["", "Dry your hands."])
+    clip, _ = n.synth("Dry your hands.", "en", "Kore")
+    assert clip.similarity == 1.0
 
 
 def test_tts_429_then_success(router: LLMRouter, tmp_path: Path) -> None:

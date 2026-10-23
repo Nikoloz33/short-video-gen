@@ -144,7 +144,13 @@ def create_app(settings: Settings | None = None, runner: Runner | None = None) -
                 "lang": s.lang,
                 "total_s": round(s.total_s, 2),
                 "scenes": [
-                    {"id": x.id, "template": x.template, "texts": scene_texts(x), "narration": x.narration}
+                    {
+                        "id": x.id,
+                        "template": x.template,
+                        "texts": scene_texts(x),
+                        "narration": x.narration,
+                        "duration_s": x.duration_s,
+                    }
                     for x in s.scenes
                 ],
             }
@@ -154,6 +160,7 @@ def create_app(settings: Settings | None = None, runner: Runner | None = None) -
             "status": values.get("status", "idle"),
             "messages": messages,
             "pending": r.pending_interrupt(pid),
+            "can_retry": r.can_retry(pid),
             "spec": outline,
             "render": values.get("render"),
             "tts": values.get("tts_stats"),
@@ -208,6 +215,14 @@ def create_app(settings: Settings | None = None, runner: Runner | None = None) -
         if r.pending_interrupt(pid) is None:
             raise HTTPException(409, "nothing is waiting for review")
         return sse(r, pid, r.run(pid, resume={"action": body.action, "text": body.text or "", "user": user}))
+
+    @app.post("/api/projects/{pid}/retry", dependencies=[Depends(auth)])
+    def retry(pid: str, r: Runner = Depends(get_runner)) -> EventSourceResponse:
+        """Continue a run that stopped on an error (e.g. a provider 429) from its last checkpoint."""
+        project_or_404(r, pid)
+        if not r.can_retry(pid):
+            raise HTTPException(409, "nothing to retry")
+        return sse(r, pid, r.run(pid, retry=True))
 
     @app.get("/api/projects/{pid}/versions/{version}/{preset}/{kind}", dependencies=[Depends(auth)])
     def download(

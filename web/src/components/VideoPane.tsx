@@ -40,7 +40,7 @@ export const SpeedPanel = ({ r, now }: { r: RenderState | null; now: number }) =
     );
   const fps = r.preset === 'final' ? 30 : 15;
   const sp = computeSpeed({ ...r, fps });
-  const elapsed = r.finished ? r.elapsedMs / 1000 : Math.max(0, now - r.startedAt) / 1000;
+  const elapsed = r.finished ? r.elapsedMs / 1000 : Math.max(0, (r.endedAt ?? now) - r.startedAt) / 1000;
   const hits = r.tts.cache_hits ?? 0;
   const pct = Math.round((r.finished ? 1 : sp.fraction) * 100);
   return (

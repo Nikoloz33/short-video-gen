@@ -711,8 +711,8 @@ select {
 }
 
 .stage-area {
-  flex: 1;
-  min-height: 0;
+  /* never shrink under its content: the studio pane scrolls instead of overlapping the meter */
+  flex: 1 0 auto;
   display: grid;
   grid-template-columns: auto minmax(220px, 1fr);
   gap: 28px;
@@ -751,17 +751,39 @@ select {
   font-size: var(--t-s);
 }
 
+/* The scene list never grows past the phone: long videos scroll inside it. */
+.scenes {
+  height: min(64vh, 680px);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .scenes h3 {
   font-size: var(--t-m);
   font-weight: 600;
   margin-bottom: 10px;
+  flex: none;
 }
 
 .scenes ol {
   list-style: none;
-  padding: 0;
+  padding: 0 6px 0 0;
   display: grid;
+  align-content: start;
   gap: 2px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  /* fade the bottom edge so it reads as "more below" */
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+
+.scenes li:last-child {
+  padding-bottom: 24px;
 }
 
 .scenes button {
@@ -917,6 +939,8 @@ select {
   }
   .scenes {
     width: 100%;
+    height: auto;
+    max-height: 50vh;
   }
   .readout {
     grid-template-columns: repeat(3, auto);

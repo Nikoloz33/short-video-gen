@@ -24,6 +24,8 @@ export type RenderState = {
   };
   bundleCacheHit: boolean | null;
   finished: boolean;
+  /** Set when the run ends without finishing this render (error, review, stop): freezes the clock. */
+  endedAt?: number;
 };
 
 export type State = {
@@ -188,6 +190,10 @@ const onServer = (s: State, e: ServerEvent): State => {
     case 'done':
       return {
         ...s,
+        render:
+          s.render && !s.render.finished && !s.render.endedAt
+            ? { ...s.render, endedAt: Date.now() }
+            : s.render,
         status: String(e.status ?? s.status),
         costUsd: num(e.total_cost_usd, s.costUsd),
         canRetry: Boolean(e.can_retry),

@@ -56,7 +56,7 @@ export const App = () => {
 
   // Keep elapsed time and ETA moving while a render is running.
   useEffect(() => {
-    if (!state.render || state.render.finished) return;
+    if (!state.render || state.render.finished || state.render.endedAt) return;
     const t = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(t);
   }, [state.render]);
@@ -108,7 +108,9 @@ export const App = () => {
   };
 
   const marks = useMemo(() => sceneMarks(state.messages), [state.messages]);
-  const working = state.busy || WORKING.has(state.status);
+  // A run that stopped mid-way keeps its last status: say so instead of pretending to work.
+  const stopped = !state.busy && state.canRetry;
+  const working = state.busy || (!stopped && WORKING.has(state.status));
 
   return (
     <div className="shell">
@@ -133,7 +135,7 @@ export const App = () => {
           New video
         </button>
         <p className={`status ${working ? 'is-working' : ''}`} aria-live="polite">
-          {statusLabel(state.status)}
+          {stopped ? 'Stopped — press Retry to continue' : statusLabel(state.status)}
           {state.costUsd ? <span className="cost">${state.costUsd.toFixed(2)} used</span> : null}
         </p>
       </header>

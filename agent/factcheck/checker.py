@@ -68,6 +68,10 @@ class FactReport(BaseModel):
 
 
 def check_scene(scene: Scene, retriever: HybridRetriever, router: LLMRouter) -> tuple[SceneReport, Usage]:
+    if scene.template == "disclaimer":
+        # Required policy text ("follow your doctor's instructions; this summarises the document you
+        # received"), not a claim taken from the source — checking it against the source always fails.
+        return SceneReport(scene_id=scene.id, ok=True), Usage()
     texts = scene_texts(scene)
     prompt = load_prompt("claims").render(
         template=scene.template, texts=" | ".join(texts), narration=scene.narration

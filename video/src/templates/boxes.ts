@@ -20,7 +20,7 @@ export const BOXES = {
   checklist: { heading: b(920, 2, 72, 700), items: b(780, 2, 50, 400) },
   warning: { heading: b(840, 2, 76, 700), text: b(840, 3, 54, 400) },
   timer: { label: b(920, 2, 64, 700) },
-  schedule: { heading: b(920, 2, 72, 700), time: b(240, 1, 44, 700), text: b(580, 2, 46, 400) },
+  schedule: { heading: b(920, 2, 72, 700), time: b(240, 2, 40, 700), text: b(580, 2, 46, 400) },
   quiz_question: { question: b(920, 3, 62, 700), options: b(740, 2, 48, 400) },
   quiz_answer: { question: b(920, 2, 42, 400), options: b(740, 2, 48, 400), explanation: b(920, 3, 50, 400) },
   summary: { heading: b(920, 2, 72, 700), points: b(780, 2, 50, 400) },

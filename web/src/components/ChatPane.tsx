@@ -71,7 +71,7 @@ export const ChatPane = (p: Props) => {
     const f = e.dataTransfer.files?.[0];
     if (f && canUpload) p.onUpload(f);
   };
-  const working = p.busy || WORKING.has(p.status);
+  const working = p.busy || (WORKING.has(p.status) && !p.replies.some((r) => r.action === 'retry'));
 
   return (
     <section

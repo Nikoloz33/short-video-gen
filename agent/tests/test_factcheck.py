@@ -169,3 +169,12 @@ def test_fact_report_merge_signature_counts() -> None:
     fixed = rep.merged([SceneReport(scene_id="s2", ok=True)], ["s2", "s1"])
     assert fixed.ok and [s.scene_id for s in fixed.scenes] == ["s2", "s1"]
     assert rep.counts() == {}
+
+
+def test_disclaimer_is_policy_not_a_claim(tmp_path: Path, router: LLMRouter) -> None:
+    from agent.schemas.video_spec import DisclaimerScene
+
+    d = DisclaimerScene(id="d", template="disclaimer", heading="Follow your doctor", text="This summarises the document.",
+                        narration="Follow your doctor's instructions.", evidence=[], duration_s=5)  # fmt: skip
+    rep, usage = check_scene(d, _retriever(tmp_path, router), router)
+    assert rep.ok and rep.claims == [] and usage.cost_usd == 0

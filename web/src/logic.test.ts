@@ -140,6 +140,13 @@ describe('reducer', () => {
     });
     expect(s.render).toMatchObject({ preset: 'final', finished: false, renderedFrames: 1 });
     expect(ev(initialState, { type: 'render_done' })).toBe(initialState);
+    // A run that ends mid-render (error, stop) freezes the clock instead of counting forever.
+    const stalled = ev(ev(initialState, { type: 'render_progress', stage: 'tts', done: 1, total: 9 }), {
+      type: 'done',
+      status: 'error',
+    });
+    expect(stalled.render?.endedAt).toBeGreaterThan(0);
+    expect(stalled.render?.finished).toBe(false);
     expect(ev(initialState, { type: 'unknown' })).toBe(initialState);
   });
 

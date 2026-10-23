@@ -10,6 +10,7 @@ from agent.graph.deps import Deps, emit, say, status
 from agent.graph.nodes.common import dump, spec_of
 from agent.graph.state import GraphState
 from agent.llm.usage import Usage, merge_usage
+from agent.metrics import record_render
 from agent.render.validate import validate_video
 from agent.render.worker import Preset, RenderError
 from agent.script import apply_audio
@@ -124,6 +125,8 @@ def make_validate_video(deps: Deps) -> Any:
         checks = validate_video(spec, preset, render[preset], deps.settings.ffmpeg("ffprobe"))
         render[preset] = {**render[preset], "checks": checks}
         failed = [c for c in checks if not c["ok"]]
+        record_render(deps.settings.data_dir / "metrics.db", state["project_id"], spec.version, preset,
+                      spec.total_s, render[preset], state.get("tts_stats") or {}, not failed)  # fmt: skip
         out: dict[str, Any] = {"render": render}
         if failed:
             card = {"kind": "validation", "preset": preset, "checks": checks}

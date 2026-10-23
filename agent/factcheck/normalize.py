@@ -7,7 +7,7 @@ import re
 from dataclasses import dataclass
 from functools import lru_cache
 
-from agent.settings import get_settings
+from agent.settings import REPO_ROOT
 
 # ---- numbers -----------------------------------------------------------------------------------
 
@@ -145,7 +145,8 @@ def missing_quantities(claim: str, evidence: str) -> list[Quantity]:
     for q in quantities(claim):
         if q.unit is None and q.value in (1.0, 0.0):
             continue
-        ok = any(e.value == q.value and (e.unit == q.unit or e.unit is None or q.unit is None) for e in ev)
+        # A number with a unit needs the same unit in the evidence (a bare "5." list index is not "5 s").
+        ok = any(e.value == q.value and (e.unit == q.unit or q.unit is None) for e in ev)
         if not ok:
             missing.append(q)
     return missing
@@ -169,7 +170,7 @@ def is_negated(text: str) -> bool:
 
 @lru_cache(maxsize=1)
 def glossary() -> list[dict[str, list[str] | str]]:
-    path = get_settings().data_dir / "glossary" / "medical.json"
+    path = REPO_ROOT / "data" / "glossary" / "medical.json"
     terms: list[dict[str, list[str] | str]] = json.loads(path.read_text("utf-8"))["terms"]
     return terms
 

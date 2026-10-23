@@ -1,0 +1,25 @@
+{
+  "_comment": "Fact-check mutation suite: each case is a correct claim from a synthetic source and a corrupted version. The checker must accept `good` and reject `bad`.",
+  "cases": [
+    { "source": "handwashing-sop-en.md", "kind": "wrong_number", "good": "Scrub your hands for at least 20 seconds.", "bad": "Scrub your hands for at least 10 seconds." },
+    { "source": "handwashing-sop-en.md", "kind": "wrong_number", "good": "Change gloves at least every 4 hours during continuous use.", "bad": "Change gloves at least every 8 hours during continuous use." },
+    { "source": "handwashing-sop-en.md", "kind": "flipped_negation", "good": "Do not dry your hands on your apron.", "bad": "Dry your hands on your apron." },
+    { "source": "handwashing-sop-en.md", "kind": "flipped_negation", "good": "Never wash your hands in a food preparation sink.", "bad": "Wash your hands in a food preparation sink." },
+    { "source": "handwashing-sop-en.md", "kind": "invented_step", "good": "Wet your hands with warm running water.", "bad": "Wet your hands with hot water mixed with bleach." },
+    { "source": "handwashing-sop-en.md", "kind": "invented_step", "good": "Dry your hands with a single-use paper towel.", "bad": "Dry your hands with an electric hand dryer for 30 seconds." },
+    { "source": "handwashing-sop-en.md", "kind": "swapped_order", "good": "Apply soap after wetting your hands.", "bad": "Apply soap before wetting your hands." },
+    { "source": "discharge-knee-en.md", "kind": "wrong_dose", "good": "Take paracetamol 500 mg every 6 hours as needed for pain.", "bad": "Take paracetamol 1000 mg every 6 hours as needed for pain." },
+    { "source": "discharge-knee-en.md", "kind": "wrong_dose", "good": "Take ibuprofen 400 mg with food every 8 hours for 5 days.", "bad": "Take ibuprofen 400 mg with food every 4 hours for 5 days." },
+    { "source": "discharge-knee-en.md", "kind": "wrong_number", "good": "Do not take more than 4 doses of paracetamol in 24 hours.", "bad": "Do not take more than 6 doses of paracetamol in 24 hours." },
+    { "source": "discharge-knee-en.md", "kind": "wrong_number", "good": "Keep the dressing clean and dry for 48 hours.", "bad": "Keep the dressing clean and dry for 24 hours." },
+    { "source": "discharge-knee-en.md", "kind": "flipped_negation", "good": "Do not drive for 1 week.", "bad": "You may drive after surgery." },
+    { "source": "discharge-knee-en.md", "kind": "flipped_negation", "good": "Never put ice directly on the skin.", "bad": "Put ice directly on the skin." },
+    { "source": "discharge-knee-en.md", "kind": "wrong_drug", "good": "Take ibuprofen with food.", "bad": "Take aspirin with food." },
+    { "source": "discharge-knee-en.md", "kind": "invented_step", "good": "Wash your hands before touching the dressing.", "bad": "Apply antibiotic cream to the wound twice a day." },
+    { "source": "discharge-knee-en.md", "kind": "wrong_number", "good": "Call your doctor if you have a fever above 38 °C.", "bad": "Call your doctor if you have a fever above 40 °C." },
+    { "source": "discharge-knee-en.md", "kind": "wrong_number_ka", "good": "ყინული დაიდეთ მუხლზე 20 წუთით, დღეში 3-ჯერ.", "bad": "ყინული დაიდეთ მუხლზე 40 წუთით, დღეში 3-ჯერ." },
+    { "source": "discharge-knee-en.md", "kind": "flipped_negation_ka", "good": "1 კვირის განმავლობაში არ მართოთ მანქანა.", "bad": "1 კვირის განმავლობაში შეგიძლიათ მართოთ მანქანა." },
+    { "source": "handwashing-sop-en.md", "kind": "wrong_number_ka", "good": "იხეხეთ ხელები მინიმუმ 20 წამის განმავლობაში.", "bad": "იხეხეთ ხელები მინიმუმ 5 წამის განმავლობაში." },
+    { "source": "handwashing-sop-en.md", "kind": "flipped_negation_ka", "good": "არ გაიმშრალოთ ხელები წინსაფარზე.", "bad": "გაიმშრალეთ ხელები წინსაფარზე." }
+  ]
+}

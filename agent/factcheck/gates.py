@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from agent.factcheck.normalize import is_negated, missing_names, missing_quantities, quantities
@@ -14,6 +15,18 @@ class GateResult:
     why: str | None = None
 
 
+def closest_clause(claim: str, quote: str) -> str:
+    """The clause of `quote` the claim paraphrases. Quotes often join an instruction and a
+    prohibition ("use the hand-wash sink only — never use a food sink"); polarity must be compared
+    with the matching clause, not the whole quote."""
+    from rapidfuzz import fuzz
+
+    clauses = [c.strip() for c in re.split(r"[;—–]|\. |, but |\bbut\b|: ", quote) if c.strip()]
+    if len(clauses) <= 1:
+        return quote
+    return max(clauses, key=lambda c: fuzz.token_set_ratio(claim.lower(), c.lower()))
+
+
 def check_claim(claim: str, evidence: str, quote: str | None) -> GateResult:
     """Numbers/units must occur in the evidence, names must appear, polarity must match the quote."""
     miss_q = missing_quantities(claim, evidence)
@@ -22,7 +35,7 @@ def check_claim(claim: str, evidence: str, quote: str | None) -> GateResult:
     miss_n = missing_names(claim, evidence)
     if miss_n:
         return GateResult(False, "names", f"not in the source: {', '.join(miss_n)}")
-    if quote and is_negated(claim) != is_negated(quote):
+    if quote and is_negated(claim) != is_negated(closest_clause(claim, quote)):
         return GateResult(
             False,
             "polarity",

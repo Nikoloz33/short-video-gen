@@ -182,17 +182,27 @@ def apply_ops(
     return new_spec, effects, usage
 
 
+def _back_to_review(state: GraphState) -> str:
+    """Nothing changed: return to the review the user was in (or finish if there was none)."""
+    if state.get("render") and state.get("script_approved"):
+        return "present_video"
+    return "present_script" if state.get("spec") else "end"
+
+
 def make_apply_edit(deps: Deps) -> Any:
     def apply_edit(state: GraphState) -> dict[str, Any]:
         spec = spec_of(state)
         plan = EditPlan.model_validate(state.get("edit") or {"ops": [], "reply": ""})
         if not plan.ops:
-            return {**say(plan.reply or "I didn't find anything to change."), "route": "end", "edit": None,
-                    **status("awaiting_video_review" if state.get("render") else "idle")}  # fmt: skip
+            return {
+                **say(plan.reply or "I didn't find anything to change."),
+                "route": _back_to_review(state),
+                "edit": None,
+            }
         try:
             new_spec, effects, usage = apply_ops(deps, state, spec, plan.ops)
         except (EditError, ValidationError) as e:
-            return {**say(f"I couldn't apply that: {e}"), "route": "end", "edit": None}
+            return {**say(f"I couldn't apply that: {e}"), "route": _back_to_review(state), "edit": None}
         if effects["rewrite"]:
             req = {**state.get("request", {}), "target_sec": effects["rewrite"]}
             return {**say(plan.reply), "request": req, "route": "write_script", "edit": None,

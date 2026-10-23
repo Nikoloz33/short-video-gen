@@ -6,6 +6,7 @@ import threading
 from collections.abc import Iterator
 from typing import Any
 
+import httpx
 from google import genai
 from google.genai import errors, types
 
@@ -26,7 +27,7 @@ _RETRYABLE = {408, 429, 500, 502, 503, 504}
 def _wrap(e: Exception) -> Exception:
     if isinstance(e, errors.APIError) and e.code in _RETRYABLE:
         return RetryableError(str(e), e.code)
-    if isinstance(e, TimeoutError | ConnectionError):
+    if isinstance(e, TimeoutError | ConnectionError | httpx.TransportError):
         return RetryableError(str(e))
     return e
 

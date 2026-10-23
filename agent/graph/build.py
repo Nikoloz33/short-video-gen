@@ -100,6 +100,6 @@ def build_graph(
     g.add_conditional_edges(
         "apply_edit",
         _route("end"),
-        ["write_script", "translate", "fact_check", "narrate", "present_script", END],
+        ["write_script", "translate", "fact_check", "narrate", "present_script", "present_video", END],
     )
     return g.compile(checkpointer=checkpointer)

@@ -1,0 +1,32 @@
+name: evals-smoke
+
+# Manual only: calls Vertex AI and costs money (~$0.5 per run).
+on:
+  workflow_dispatch:
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      FFMPEG_DIR: /usr/bin
+      GOOGLE_CLOUD_PROJECT: ${{ vars.GOOGLE_CLOUD_PROJECT }}
+      GOOGLE_CLOUD_LOCATION: eu
+      GOOGLE_GENAI_USE_VERTEXAI: "True"
+      MAX_TOTAL_SPEND_USD: "5"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run pytest -m live --no-cov
+      - run: uv run python -m agent.evals.run --live
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: docs/evals/report.md

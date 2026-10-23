@@ -1,0 +1,17 @@
+.git
+.env
+.venv
+node_modules
+**/node_modules
+out
+data/projects
+data/chroma
+data/cache
+data/*.db
+data/*.sqlite*
+web/dist
+web/public/fonts
+**/__pycache__
+.mypy_cache
+.ruff_cache
+.pytest_cache

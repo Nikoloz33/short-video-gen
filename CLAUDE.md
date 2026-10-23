@@ -36,6 +36,32 @@ burned-in captions, quiz checkpoints. Product spec: `docs/brief.md` (single sour
   in `video/src/icons/custom.tsx`, tags in en/ka). Add an icon = add a catalog entry; the test checks
   it resolves.
 
+## Agent (agent/)
+- Graph: `agent/graph/build.py` wires nodes from `agent/graph/nodes/*` (factories over `Deps`, no
+  globals). Routing functions only read state; nodes write a one-shot `route` hint that the
+  `_clears_route` wrapper resets — `check_scene` (parallel `Send` branches) is registered unwrapped.
+- Human checkpoints: `present_*` posts the card, `review_*` only calls `interrupt()` (nodes re-run
+  from the top on resume — no side effects there). Resume payload `{action: approve|edit|regenerate, text, user}`.
+- `Runner` (`agent/graph/runner.py`): SqliteSaver at `data/checkpoints.sqlite`, thread_id = project id,
+  stream modes updates+custom, spend budget + thread id bound per run. A run must stay on ONE thread
+  (context vars): the API runs it in a worker thread and pipes events through a queue.
+- Models: only via `LLMRouter` roles. Both Flash and Argon returned 429 on the trial project (eu
+  and global): Flash roles fall back to `fallback_reasoning` (Argon), Argon roles to `fallback_fast`
+  (Flash), with a 5-min cooldown per model; SDK-internal retries are off. A run that still fails
+  keeps its checkpoint: `Runner.run(retry=True)` / `POST /retry` / `agent.cli retry` continue it.
+- Fact-check lessons from live runs: "stop" is not a negation ("hands stop germs"); polarity is
+  compared per clause of the quote; translation name checks are one-directional (source names must
+  survive; "Handwashing" becomes "ხელების დაბანა"); layout fixes get an explicit character target
+  and their own loop budget (`layout_loops`).
+- Writes happen in the source language; `translate` runs after fact-check (+ back-translation gates).
+- Chat edits: `chat_edit` → `EditPlan` ops → `apply_edit` (`apply_ops`) → minimal recompute route.
+- LLM drafts are flat (`agent/schemas/llm_io.py`); `agent/script.py` converts them, repairs missing
+  icons/short texts deterministically, and estimates durations until TTS measures them.
+- Fact-check gates (`agent/factcheck/`): numbers/units (en + ka number words), glossary names
+  (`data/glossary/medical.json`), clause-level negation polarity. They override the LLM verdict.
+- Fake mode (`APP_FAKE=1` or `--fake`): `agent/llm/fake_scenario.py` + `FakeRenderer`, separate
+  ledger `metrics-fake.db`. Point `DATA_DIR` elsewhere to keep fake projects apart.
+
 ## Video contract (single source of truth: `agent/schemas/video_spec.py`)
 - Change the Pydantic models, then run BOTH:
   `uv run python -m agent.schemas.export` (→ `video/src/generated/spec.schema.json`) and
@@ -67,6 +93,11 @@ burned-in captions, quiz checkpoints. Product spec: `docs/brief.md` (single sour
 |---|---|
 | `uv run ruff check . ; uv run ruff format --check . ; uv run mypy ; uv run pytest` | Python checks |
 | `npm run lint ; npm run format:check ; npm run typecheck ; npm test` | TS checks (all workspaces) |
+| `uv run uvicorn agent.api.app:app --port 8000` + `npm run dev -w web` | API + UI (http://localhost:5173, token `?token=` or `APP_TOKEN`) |
+| `uv run python -m agent.cli [--fake] create --source f --message "..." [--approve script,video]` | drive the agent from the CLI (`chat`, `resume`, `status`, `spend`) |
+| `uv run python scripts/probe_models.py [--location eu]` | one call per model (availability) |
+| `uv run python -m agent.evals.run [--live]` | mutation suite + metrics → `docs/evals/report.md` |
+| `uv run pytest -m live --no-cov` | opt-in Vertex smoke tests (costs cents) |
 | `npm run render:smoke -w video` | bundle + tiny render + ffprobe check |
 | `npm run gallery -w video [-- --update]` | stills of every template (en+ka) → `out/gallery/contact-<lang>.png`; `--update` rewrites snapshots |
 | `uv run python -m agent.schemas.export [--check]` + `npm run codegen -w video [-- --check]` | contract export + TS/zod codegen |
@@ -89,5 +120,9 @@ burned-in captions, quiz checkpoints. Product spec: `docs/brief.md` (single sour
 
 ## Tooling gotchas
 - Bash heredocs mangle `${}`, backticks and `\n`: write scripts with the editor tools instead.
+- In `node -e` string replacements, `$'` / `$&` in the replacement are special (they once pasted a
+  copy of the file into a function) — prefer the Edit tool.
+- The Playwright MCP browser needs Chrome; the e2e test instead reuses Remotion's headless shell
+  (`node_modules/.remotion/chrome-headless-shell`).
 - Paths contain spaces: quote them; run ffmpeg with relative paths from the repo root.
 - Remotion bundles copy `video/public/` into `%TEMP%`; `bundleProject()` deletes its bundle on exit.

@@ -171,6 +171,10 @@ No cloud account yet? Run everything with fake models, fake TTS and a fake rende
 $env:APP_FAKE = "1"; uv run uvicorn agent.api.app:app --port 8000
 ```
 
+If a provider rate limit (429) stops a run, nothing is lost: press **Retry** in the chat
+(or `POST /api/projects/<id>/retry`, or `agent.cli retry <id>`) and the run continues from its
+last checkpoint.
+
 ### Or drive it from the command line
 
 ```powershell
@@ -399,11 +403,12 @@ docs/             brief, ADRs, render-worker protocol
 | Video contract (Pydantic → JSON Schema → TS/zod) | ✅ done |
 | Render worker with progress, presets, validation | ✅ done |
 | Model router (Vertex, retries, fallback, cost caps) | ✅ done |
-| LangGraph pipeline, RAG, fact-check, translation, TTS, chat edits | ✅ implemented, end-to-end in fake mode; live runs in progress |
-| FastAPI + SSE | 🚧 in progress |
-| Web UI (two panes, render-speed panel) | 🚧 in progress |
-| Test suite (graph, RAG, fact-check mutation suite, API, UI) | 🚧 partial |
-| Evals, metrics, Dockerfile | ⏳ planned |
+| LangGraph pipeline, RAG, fact-check, translation, TTS, chat edits | ✅ done (end-to-end in fake mode and against Vertex AI) |
+| Resilience: 429 fallbacks between Flash and Argon, resumable runs (Retry) | ✅ done |
+| FastAPI + SSE | ✅ done |
+| Web UI (two panes, cards, quick replies, render-speed panel) | ✅ done |
+| Tests: Python 95 % coverage, video, web, Playwright smoke | ✅ done |
+| Evals (mutation suite, metrics report), Dockerfile, deploy docs | ✅ done — see [docs/evals/report.md](docs/evals/report.md) |
 
 ---
 

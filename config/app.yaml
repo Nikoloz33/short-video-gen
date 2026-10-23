@@ -5,8 +5,8 @@ languages:
   en: { tts_code: en-US, chars_per_sec: 14.0 }  # re-measure with scripts/measure_pace.py
 
 min_duration_s: 30
-max_duration_s: 60
-hard_cap_s: 90
+max_duration_s: 300
+hard_cap_s: 300
 fix_loop_cap: 2
 recursion_limit: 80
 upload_retention_days: 30

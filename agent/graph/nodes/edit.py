@@ -173,8 +173,8 @@ def apply_ops(
             voice = op.voice
             scenes = [s.model_copy(update={"audio": None}) for s in scenes]
         elif op.op == "set_target_duration":
-            if not op.target_sec or not 30 <= op.target_sec <= 60:
-                raise EditError("target duration must be 30-60 seconds")
+            if not op.target_sec or not 30 <= op.target_sec <= 300:
+                raise EditError("target duration must be between 30 seconds and 5 minutes")
             effects["rewrite"] = op.target_sec
     new_spec = renumber(spec.model_copy(update={"scenes": scenes, "voice": voice, "lang": lang}))
     VideoSpec.model_validate(new_spec.model_dump())

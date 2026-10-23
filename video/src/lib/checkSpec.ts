@@ -18,7 +18,7 @@ export type Issue = {
 };
 
 export type CheckLimits = { minTotalS: number; maxTotalS: number; minSceneS: number; maxSceneS: number };
-export const DEFAULT_LIMITS: CheckLimits = { minTotalS: 30, maxTotalS: 60, minSceneS: 2, maxSceneS: 15 };
+export const DEFAULT_LIMITS: CheckLimits = { minTotalS: 30, maxTotalS: 300, minSceneS: 2, maxSceneS: 15 };
 /** Minimum seconds a viewer needs to read a quiz question + options before the countdown matters. */
 export const MIN_QUIZ_READ_S = 3;
 

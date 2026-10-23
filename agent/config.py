@@ -60,8 +60,8 @@ class RenderPreset(BaseModel):
 class AppConfig(BaseModel):
     languages: dict[Language, LanguageConfig]
     min_duration_s: float = 30
-    max_duration_s: float = 60
-    hard_cap_s: float = 90
+    max_duration_s: float = 300
+    hard_cap_s: float = 300
     fix_loop_cap: int = 2
     recursion_limit: int = 80
     upload_retention_days: int = 30

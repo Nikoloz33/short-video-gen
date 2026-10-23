@@ -10,7 +10,7 @@ export interface VideoSpec {
   target_sec: number;
   /**
    * @minItems 1
-   * @maxItems 24
+   * @maxItems 80
    */
   scenes: (
     | TitleCardScene

@@ -44,7 +44,7 @@ def make_intake(deps: Deps) -> Any:
             "quiz_count": res.quiz_count if res.quiz_count is not None else prev.get("quiz_count", 1),
             "source_lang": src_lang,
         }
-        request["target_sec"] = max(30, min(60, request["target_sec"]))
+        request["target_sec"] = max(30, min(300, request["target_sec"]))
         return {**out, **say(res.reply), **status("planning"), "request": request, "route": "ingest_source"}
 
     return intake

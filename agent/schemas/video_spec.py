@@ -183,8 +183,8 @@ class VideoSpec(_Model):
     audience: Audience
     voice: str = "Kore"
     theme: str = "default"
-    target_sec: float = Field(ge=15, le=90)
-    scenes: list[Scene] = Field(min_length=1, max_length=24)
+    target_sec: float = Field(ge=15, le=300)
+    scenes: list[Scene] = Field(min_length=1, max_length=80)
     sources: list[SourceRef] = Field(default_factory=list)
 
     @model_validator(mode="after")

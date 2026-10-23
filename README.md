@@ -1,6 +1,6 @@
 # InstructVid
 
-**Turn a source document into a fact-checked, narrated 30–60 second instructional video — by chatting.**
+**Turn a source document into a fact-checked, narrated instructional video (30 seconds to 5 minutes) — by chatting.**
 
 Upload an SOP, a safety procedure or a patient's discharge instructions, then say what you need:
 *"a 45-second Georgian training video with one quiz"*. An agent plans the video, writes the

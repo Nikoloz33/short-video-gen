@@ -168,7 +168,7 @@ export const VideoSpecSchema = z
     audience: z.enum(['workplace', 'patient']),
     voice: z.string().default('Kore'),
     theme: z.string().default('default'),
-    target_sec: z.number().gte(15).lte(90),
+    target_sec: z.number().gte(15).lte(300),
     scenes: z
       .array(
         z.discriminatedUnion('template', [
@@ -186,7 +186,7 @@ export const VideoSpecSchema = z
         ]),
       )
       .min(1)
-      .max(24),
+      .max(80),
     sources: z.array(SourceRefSchema),
   })
   .strict();

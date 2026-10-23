@@ -910,7 +910,7 @@
       "type": "string"
     },
     "target_sec": {
-      "maximum": 90,
+      "maximum": 300,
       "minimum": 15,
       "type": "number"
     },
@@ -968,7 +968,7 @@
           }
         ]
       },
-      "maxItems": 24,
+      "maxItems": 80,
       "minItems": 1,
       "type": "array"
     },

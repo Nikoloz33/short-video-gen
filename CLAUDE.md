@@ -1,7 +1,7 @@
 # InstructVid — project guidelines
 
 Chat agent that turns a source document (SOP, safety procedure, discharge instructions) into a
-fact-checked 30–60 s instructional video: flat motion graphics, Georgian or English narration,
+fact-checked instructional video (30 s to 5 min): flat motion graphics, Georgian or English narration,
 burned-in captions, quiz checkpoints. Product spec: `docs/brief.md` (single source of truth).
 
 ## Layout

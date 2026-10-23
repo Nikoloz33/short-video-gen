@@ -135,7 +135,7 @@ def production_metrics(settings: Settings) -> dict[str, Any]:
             "wall_p50_s": percentile(walls, 0.5),
             "wall_p90_s": percentile(walls, 0.9),
             "realtime_p50": percentile(rt, 0.5),
-            "duration_in_range": (sum(30 <= r["video_s"] <= 60 for r in rs) / len(rs)) if rs else None,
+            "duration_in_range": (sum(30 <= r["video_s"] <= 300 for r in rs) / len(rs)) if rs else None,
         }
     with sqlite3.connect(db) as c:
         per_thread = [

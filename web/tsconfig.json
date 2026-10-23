@@ -12,9 +12,22 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "types": ["vite/client", "@testing-library/jest-dom"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
+    ],
+    "types": [
+      "vite/client",
+      "@testing-library/jest-dom",
+      "node"
+    ],
     "noEmit": true
   },
-  "include": ["src", "vite.config.ts"]
+  "include": [
+    "src",
+    "vite.config.ts",
+    "playwright.config.ts",
+    "e2e"
+  ]
 }

@@ -35,3 +35,6 @@ video/public/media/
 # test artefacts
 playwright-report/
 test-results/
+web/test-results/
+web/public/fonts/
+web/playwright-report/

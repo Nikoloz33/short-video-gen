@@ -1,0 +1,21 @@
+/* Bundled locally (copied from video/public/fonts by the build): no CDN. */
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('/fonts/noto-sans-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('/fonts/noto-sans-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+}
+@font-face {
+  font-family: 'Noto Sans Georgian';
+  src: url('/fonts/noto-sans-georgian-georgian-400-normal.woff2') format('woff2');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'Noto Sans Georgian';
+  src: url('/fonts/noto-sans-georgian-georgian-700-normal.woff2') format('woff2');
+  font-weight: 700;
+}

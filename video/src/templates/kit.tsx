@@ -5,7 +5,7 @@
 import React, { createContext, useContext } from 'react';
 import { Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { Icon } from '../icons/Icon';
-import { fitText, segmentLines, type FitBox } from '../lib/textFit';
+import { fitShrink, segmentLines, type FitBox } from '../lib/textFit';
 import type { Lang } from '../spec/types';
 import { DEFAULT_THEME, type Theme } from '../theme/theme';
 
@@ -79,13 +79,13 @@ export const FitLines: React.FC<{
   style?: React.CSSProperties;
 }> = ({ text, box, color, highlight, align = 'left', style }) => {
   const { theme } = useSceneCtx();
-  const fit = fitText(text, box);
+  const fit = fitShrink(text, box);
   if (!fit.ok) throw new Error(`text does not fit (${fit.reason}): "${text}"`);
   return (
     <div
       style={{
         fontFamily: theme.font.family,
-        fontSize: box.size,
+        fontSize: fit.size,
         fontWeight: box.weight,
         lineHeight: theme.lineHeight,
         color: color ?? theme.colors.ink,

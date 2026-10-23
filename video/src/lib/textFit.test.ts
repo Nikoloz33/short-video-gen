@@ -101,3 +101,18 @@ describe('segmentLines', () => {
     ]);
   });
 });
+
+describe('fitShrink', () => {
+  it('keeps the box size when the text fits and shrinks long words up to 80 %', async () => {
+    const { fitShrink, MIN_SHRINK } = await import('./textFit');
+    const title = { width: 920, maxLines: 3, size: 92, weight: 700 as const };
+    expect(fitShrink('How to wash your hands', title).size).toBe(92);
+    const long = 'ხელის დაბანა კვების პერსონალისთვის';
+    expect(fitText(long, title).ok).toBe(false);
+    const r = fitShrink(long, title);
+    expect(r.ok).toBe(true);
+    expect(r.size).toBeLessThan(92);
+    expect(r.size).toBeGreaterThanOrEqual(Math.round(92 * MIN_SHRINK));
+    expect(fitShrink('word '.repeat(60), title).ok).toBe(false);
+  });
+});

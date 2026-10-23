@@ -115,3 +115,18 @@ export const segmentLines = (lines: string[]): Segment[][] => {
     return segs;
   });
 };
+
+/** Text may shrink to this share of its box size before it counts as overflowing. */
+export const MIN_SHRINK = 0.8;
+
+/**
+ * The one fit rule shared by the templates and checkSpec(): the box's own size if the text fits,
+ * otherwise the largest size down to MIN_SHRINK that fits (long Georgian compound words are wider
+ * than a title box at full size). Returns the failing full-size result when nothing fits.
+ */
+export const fitShrink = (text: string, box: FitBox): FitResult & { size: number } => {
+  const full = fitText(text, box);
+  if (full.ok || full.reason === 'missing_glyph' || full.reason === 'empty')
+    return { ...full, size: box.size };
+  return fitSize(text, box, Math.round(box.size * MIN_SHRINK), 2) ?? { ...full, size: box.size };
+};

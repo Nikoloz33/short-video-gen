@@ -7,7 +7,7 @@ import { hasIcon } from '../icons/catalog';
 import type { Scene, VideoSpec } from '../spec/types';
 import { BOXES, CAPTION_BOX, UI_TEXT } from '../templates/boxes';
 import { chunkText } from './captions';
-import { fitText, type FitBox } from './textFit';
+import { fitShrink, fitText, type FitBox } from './textFit';
 
 export type Issue = {
   scene_id: string;
@@ -128,7 +128,7 @@ export const checkSpec = (spec: VideoSpec, limits: CheckLimits = DEFAULT_LIMITS)
     ids.add(s.id);
 
     for (const [field, text, box, index] of textFields(s)) {
-      const r = fitText(text, box);
+      const r = fitShrink(text, box);
       if (!r.ok) {
         add({
           scene_id: s.id,
